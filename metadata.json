@@ -1,0 +1,8 @@
+{
+  "name": "Magister Kesehatan Masyarakat FIKPsi UM Pontianak",
+  "description": "Portal Resmi Program Studi Magister Kesehatan Masyarakat (S2) Fakultas Ilmu Kesehatan dan Psikologi Universitas Muhammadiyah Pontianak.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
