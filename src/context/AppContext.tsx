@@ -15,6 +15,12 @@ import {
   DEFAULT_INITIAL_APPLICANTS,
   DEFAULT_FAQS_DATA,
 } from '../data/mkmData';
+import {
+  getStoredSupabaseConfig,
+  fetchAllFromSupabase,
+  insertApplicantToSupabase,
+  updateApplicantStatusInSupabase,
+} from '../services/supabaseService';
 
 export type UserRole = 'admin' | 'dosen' | 'mahasiswa' | null;
 
@@ -147,6 +153,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return DEFAULT_INITIAL_APPLICANTS;
     }
   });
+
+  // Automatically fetch from Supabase if configured on startup
+  useEffect(() => {
+    const config = getStoredSupabaseConfig();
+    if (config.isConfigured) {
+      fetchAllFromSupabase().then((res) => {
+        if (res.success && res.data) {
+          if (res.data.settings) setSettings(res.data.settings);
+          if (res.data.applicants && res.data.applicants.length > 0) setApplicants(res.data.applicants);
+          if (res.data.peminatans && res.data.peminatans.length > 0) setPeminatans(res.data.peminatans);
+          if (res.data.lecturers && res.data.lecturers.length > 0) setLecturers(res.data.lecturers);
+          if (res.data.academicLinks && res.data.academicLinks.length > 0) setAcademicLinks(res.data.academicLinks);
+        }
+      }).catch((err) => {
+        console.warn('Initial Supabase fetch skipped:', err);
+      });
+    }
+  }, []);
 
   // Save changes to localStorage
   useEffect(() => {
@@ -302,11 +326,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setApplicants((prev) => [newApplicant, ...prev]);
+
+    // Asynchronously sync to Supabase database if connected
+    insertApplicantToSupabase(newApplicant).catch((err) => {
+      console.warn('Could not sync applicant to Supabase:', err);
+    });
+
     return regNum;
   };
 
   const updateApplicantStatus = (id: string, status: ApplicantRecord['status']) => {
     setApplicants((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
+
+    // Asynchronously update status in Supabase database
+    updateApplicantStatusInSupabase(id, status).catch((err) => {
+      console.warn('Could not update applicant status in Supabase:', err);
+    });
   };
 
   const resetAllDataToDefault = () => {

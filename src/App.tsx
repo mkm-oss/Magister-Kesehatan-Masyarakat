@@ -20,10 +20,11 @@ import { RegistrationModal } from './components/RegistrationFormModal';
 import { BrochureModal } from './components/BrochureModal';
 import { PortalLoginModal } from './components/PortalLoginModal';
 import { GoogleDriveModal } from './components/GoogleDriveModal';
+import { GoogleSheetsModal } from './components/GoogleSheetsModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { DosenPortal } from './components/DosenPortal';
 import { MahasiswaPortal } from './components/MahasiswaPortal';
-import { ShieldCheck, UserCheck, GraduationCap, Globe, FolderSync } from 'lucide-react';
+import { ShieldCheck, UserCheck, GraduationCap, Globe, FolderSync, FileSpreadsheet } from 'lucide-react';
 
 function MainAppContent() {
   const { activePortalView, setActivePortalView, currentUser } = useApp();
@@ -32,6 +33,7 @@ function MainAppContent() {
   const [isBrochureOpen, setIsBrochureOpen] = useState(false);
   const [isPortalLoginOpen, setIsPortalLoginOpen] = useState(false);
   const [isDriveOpen, setIsDriveOpen] = useState(false);
+  const [isSheetsOpen, setIsSheetsOpen] = useState(false);
   const [loginDefaultRole, setLoginDefaultRole] = useState<'admin' | 'dosen' | 'mahasiswa'>('admin');
   const [preselectedPeminatan, setPreselectedPeminatan] = useState('');
 
@@ -72,6 +74,7 @@ function MainAppContent() {
         onOpenBrochure={handleOpenBrochure}
         onOpenPortalLogin={handleOpenPortalLogin}
         onOpenGoogleDrive={() => setIsDriveOpen(true)}
+        onOpenGoogleSheets={() => setIsSheetsOpen(true)}
       />
 
       {/* Main Page Sections */}
@@ -142,6 +145,11 @@ function MainAppContent() {
         onClose={() => setIsDriveOpen(false)}
       />
 
+      <GoogleSheetsModal
+        isOpen={isSheetsOpen}
+        onClose={() => setIsSheetsOpen(false)}
+      />
+
       {/* Quick Portal Switcher Floating Dock */}
       <div className="fixed bottom-4 right-4 z-30 hidden sm:flex items-center gap-1.5 p-1.5 bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-700 text-xs">
         <span className="text-[10px] uppercase font-bold text-slate-400 px-2 tracking-wider">
@@ -178,7 +186,15 @@ function MainAppContent() {
           title="Buka Google Drive Akademik MKM"
         >
           <FolderSync className="w-3.5 h-3.5 text-amber-400" />
-          <span>Google Drive</span>
+          <span>Drive</span>
+        </button>
+        <button
+          onClick={() => setIsSheetsOpen(true)}
+          className="px-2.5 py-1.5 rounded-xl font-bold text-emerald-300 hover:bg-slate-800 transition-colors flex items-center gap-1"
+          title="Buka Google Sheets Akademik MKM"
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Sheets</span>
         </button>
       </div>
 

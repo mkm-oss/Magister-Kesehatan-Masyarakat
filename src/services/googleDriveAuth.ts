@@ -27,6 +27,8 @@ export const DRIVE_SCOPES = [
   'https://www.googleapis.com/auth/drive.photos.readonly',
   'https://www.googleapis.com/auth/drive.readonly',
   'https://www.googleapis.com/auth/drive.scripts',
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/spreadsheets.readonly',
 ];
 
 const provider = new GoogleAuthProvider();

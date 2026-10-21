@@ -18,10 +18,11 @@ import {
   FolderSync,
 } from 'lucide-react';
 import { GoogleDriveExplorer } from './GoogleDriveExplorer';
+import { GoogleSheetsManager } from './GoogleSheetsManager';
 
 export const DosenPortal: React.FC = () => {
   const { currentUser, logout, setActivePortalView, academicLinks } = useApp();
-  const [activeTab, setActiveTab] = useState<'overview' | 'drive'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'drive' | 'sheets'>('overview');
 
   // Filter links applicable for Dosen
   const dosenLinks = academicLinks.filter(
@@ -131,11 +132,26 @@ export const DosenPortal: React.FC = () => {
             }`}
           >
             <FolderSync className="w-4 h-4 text-amber-500" />
-            <span>Google Drive Dosen (Berkas Kuliah & Tesis)</span>
+            <span>Google Drive Dosen</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('sheets')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'sheets'
+                ? 'bg-emerald-900 text-white shadow-sm'
+                : 'bg-white text-emerald-800 hover:text-emerald-950'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+            <span>Google Sheets (Rekap Nilai & Presensi)</span>
           </button>
         </div>
 
-        {activeTab === 'drive' ? (
+        {activeTab === 'sheets' ? (
+          /* Google Sheets Integrated Tab */
+          <GoogleSheetsManager title="Google Sheets Dosen: Rekapitulasi Nilai & Presensi Perkuliahan MKM" />
+        ) : activeTab === 'drive' ? (
           /* Google Drive Integrated Tab */
           <GoogleDriveExplorer title="Google Drive Dosen: Berkas Kuliah & Naskah Bimbingan Tesis" />
         ) : (

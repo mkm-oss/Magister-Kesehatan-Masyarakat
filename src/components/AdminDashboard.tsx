@@ -19,9 +19,13 @@ import {
   MessageSquare,
   HelpCircle,
   FolderSync,
+  FileSpreadsheet,
+  Database,
 } from 'lucide-react';
 import { Peminatan, SemesterInfo, Lecturer, AcademicLink } from '../data/mkmData';
 import { GoogleDriveExplorer } from './GoogleDriveExplorer';
+import { GoogleSheetsManager } from './GoogleSheetsManager';
+import { SupabaseManager } from './SupabaseManager';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -48,7 +52,7 @@ export const AdminDashboard: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
-    'settings' | 'peminatan' | 'curriculum' | 'fees' | 'lecturers' | 'links' | 'applicants' | 'drive'
+    'settings' | 'peminatan' | 'curriculum' | 'fees' | 'lecturers' | 'links' | 'applicants' | 'drive' | 'sheets' | 'supabase'
   >('settings');
 
   const [successToast, setSuccessToast] = useState('');
@@ -352,7 +356,31 @@ export const AdminDashboard: React.FC = () => {
             }`}
           >
             <FolderSync className="w-4 h-4 text-amber-500" />
-            <span>Google Drive Institusi</span>
+            <span>Google Drive</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('sheets')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'sheets'
+                ? 'bg-emerald-900 text-white shadow-sm'
+                : 'bg-white text-emerald-800 hover:text-emerald-950 hover:bg-emerald-50'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+            <span>Google Sheets (PMB & Nilai)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('supabase')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'supabase'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-white text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50/80'
+            }`}
+          >
+            <Database className="w-4 h-4 text-emerald-500" />
+            <span>Database Supabase</span>
           </button>
         </div>
 
@@ -1112,7 +1140,7 @@ export const AdminDashboard: React.FC = () => {
         {/* TAB 7: Applicants Data */}
         {activeTab === 'applicants' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 flex-wrap gap-3">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">
                   Data Calon Mahasiswa Baru (PMB S2)
@@ -1121,6 +1149,15 @@ export const AdminDashboard: React.FC = () => {
                   Total {applicants.length} pendaftar tercatat di basis data.
                 </p>
               </div>
+
+              <button
+                onClick={() => setActiveTab('sheets')}
+                className="px-3.5 py-2 text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-700 rounded-xl shadow-sm transition-all flex items-center gap-2"
+                title="Buka panel Google Sheets untuk ekspor atau kelola lembar pendaftar"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Buka di Google Sheets ({applicants.length} Data)</span>
+              </button>
             </div>
 
             <div className="overflow-x-auto">
@@ -1201,6 +1238,14 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'drive' && (
           <GoogleDriveExplorer title="Google Drive Institusi MKM FIKPsi UM Pontianak" />
         )}
+
+        {/* TAB 9: Google Sheets PMB & Nilai */}
+        {activeTab === 'sheets' && (
+          <GoogleSheetsManager title="Google Sheets PMB & Akademik MKM UM Pontianak" />
+        )}
+
+        {/* TAB 10: Supabase Database Manager */}
+        {activeTab === 'supabase' && <SupabaseManager />}
 
       </div>
     </div>

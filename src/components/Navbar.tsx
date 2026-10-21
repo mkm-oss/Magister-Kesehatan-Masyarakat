@@ -7,6 +7,7 @@ interface NavbarProps {
   onOpenBrochure: () => void;
   onOpenPortalLogin: (defaultRole?: 'admin' | 'dosen' | 'mahasiswa') => void;
   onOpenGoogleDrive?: () => void;
+  onOpenGoogleSheets?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -14,6 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenBrochure,
   onOpenPortalLogin,
   onOpenGoogleDrive,
+  onOpenGoogleSheets,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -144,6 +146,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
                 </svg>
                 <span>Google Drive</span>
+              </button>
+            )}
+
+            {onOpenGoogleSheets && (
+              <button
+                onClick={onOpenGoogleSheets}
+                className="px-3 py-2 text-xs font-semibold text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                title="Buka Google Sheets Akademik MKM"
+              >
+                <svg viewBox="0 0 48 48" className="w-3.5 h-3.5 shrink-0">
+                  <path fill="#0F9D58" d="M37 45H11c-2.2 0-4-1.8-4-4V7c0-2.2 1.8-4 4-4h18l12 12v26c0 2.2-1.8 4-4 4z"/>
+                  <path fill="#87CEAC" d="M29 3v12h12"/>
+                  <path fill="#F1F1F1" d="M14 22h20v4H14zm0 6h20v4H14zm0 6h20v4H14z"/>
+                  <path fill="#0F9D58" d="M23 22h2v16h-2z"/>
+                </svg>
+                <span>Google Sheets</span>
               </button>
             )}
 
@@ -288,6 +306,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
                 </svg>
                 <span>Google Drive Akademik</span>
+              </button>
+            )}
+            {onOpenGoogleSheets && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenGoogleSheets();
+                }}
+                className="w-full py-2.5 px-4 text-xs font-semibold text-emerald-950 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-center flex items-center justify-center gap-2 border border-emerald-200"
+              >
+                <svg viewBox="0 0 48 48" className="w-4 h-4 shrink-0">
+                  <path fill="#0F9D58" d="M37 45H11c-2.2 0-4-1.8-4-4V7c0-2.2 1.8-4 4-4h18l12 12v26c0 2.2-1.8 4-4 4z"/>
+                  <path fill="#87CEAC" d="M29 3v12h12"/>
+                  <path fill="#F1F1F1" d="M14 22h20v4H14zm0 6h20v4H14zm0 6h20v4H14z"/>
+                  <path fill="#0F9D58" d="M23 22h2v16h-2z"/>
+                </svg>
+                <span>Google Sheets Akademik</span>
               </button>
             )}
             <button
