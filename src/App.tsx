@@ -19,10 +19,11 @@ import { Footer } from './components/Footer';
 import { RegistrationModal } from './components/RegistrationFormModal';
 import { BrochureModal } from './components/BrochureModal';
 import { PortalLoginModal } from './components/PortalLoginModal';
+import { GoogleDriveModal } from './components/GoogleDriveModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { DosenPortal } from './components/DosenPortal';
 import { MahasiswaPortal } from './components/MahasiswaPortal';
-import { ShieldCheck, UserCheck, GraduationCap, Globe } from 'lucide-react';
+import { ShieldCheck, UserCheck, GraduationCap, Globe, FolderSync } from 'lucide-react';
 
 function MainAppContent() {
   const { activePortalView, setActivePortalView, currentUser } = useApp();
@@ -30,6 +31,7 @@ function MainAppContent() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isBrochureOpen, setIsBrochureOpen] = useState(false);
   const [isPortalLoginOpen, setIsPortalLoginOpen] = useState(false);
+  const [isDriveOpen, setIsDriveOpen] = useState(false);
   const [loginDefaultRole, setLoginDefaultRole] = useState<'admin' | 'dosen' | 'mahasiswa'>('admin');
   const [preselectedPeminatan, setPreselectedPeminatan] = useState('');
 
@@ -69,6 +71,7 @@ function MainAppContent() {
         onOpenRegister={() => handleOpenRegister('')}
         onOpenBrochure={handleOpenBrochure}
         onOpenPortalLogin={handleOpenPortalLogin}
+        onOpenGoogleDrive={() => setIsDriveOpen(true)}
       />
 
       {/* Main Page Sections */}
@@ -134,6 +137,11 @@ function MainAppContent() {
         defaultRole={loginDefaultRole}
       />
 
+      <GoogleDriveModal
+        isOpen={isDriveOpen}
+        onClose={() => setIsDriveOpen(false)}
+      />
+
       {/* Quick Portal Switcher Floating Dock */}
       <div className="fixed bottom-4 right-4 z-30 hidden sm:flex items-center gap-1.5 p-1.5 bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-700 text-xs">
         <span className="text-[10px] uppercase font-bold text-slate-400 px-2 tracking-wider">
@@ -162,6 +170,15 @@ function MainAppContent() {
         >
           <GraduationCap className="w-3.5 h-3.5" />
           <span>Mahasiswa</span>
+        </button>
+        <div className="h-4 w-px bg-slate-700 mx-0.5" />
+        <button
+          onClick={() => setIsDriveOpen(true)}
+          className="px-2.5 py-1.5 rounded-xl font-bold text-sky-300 hover:bg-slate-800 transition-colors flex items-center gap-1"
+          title="Buka Google Drive Akademik MKM"
+        >
+          <FolderSync className="w-3.5 h-3.5 text-amber-400" />
+          <span>Google Drive</span>
         </button>
       </div>
 

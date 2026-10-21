@@ -18,8 +18,10 @@ import {
   ExternalLink,
   MessageSquare,
   HelpCircle,
+  FolderSync,
 } from 'lucide-react';
 import { Peminatan, SemesterInfo, Lecturer, AcademicLink } from '../data/mkmData';
+import { GoogleDriveExplorer } from './GoogleDriveExplorer';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -46,7 +48,7 @@ export const AdminDashboard: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
-    'settings' | 'peminatan' | 'curriculum' | 'fees' | 'lecturers' | 'links' | 'applicants'
+    'settings' | 'peminatan' | 'curriculum' | 'fees' | 'lecturers' | 'links' | 'applicants' | 'drive'
   >('settings');
 
   const [successToast, setSuccessToast] = useState('');
@@ -339,6 +341,18 @@ export const AdminDashboard: React.FC = () => {
           >
             <UserCheck className="w-4 h-4" />
             <span>Pendaftar PMB ({applicants.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('drive')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'drive'
+                ? 'bg-blue-900 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <FolderSync className="w-4 h-4 text-amber-500" />
+            <span>Google Drive Institusi</span>
           </button>
         </div>
 
@@ -1181,6 +1195,11 @@ export const AdminDashboard: React.FC = () => {
               </table>
             </div>
           </div>
+        )}
+
+        {/* TAB 8: Google Drive Institusi */}
+        {activeTab === 'drive' && (
+          <GoogleDriveExplorer title="Google Drive Institusi MKM FIKPsi UM Pontianak" />
         )}
 
       </div>
