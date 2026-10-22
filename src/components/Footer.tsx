@@ -105,6 +105,14 @@ export const Footer: React.FC<FooterProps> = ({
                 </button>
               </li>
               <li>
+                <a
+                  href="#pelayanan-akademik"
+                  className="hover:text-amber-300 text-amber-200/90 font-semibold transition-colors text-left flex items-center gap-1"
+                >
+                  <span>Layanan Tesis & Pembelajaran</span>
+                </a>
+              </li>
+              <li>
                 <button
                   onClick={() => onOpenPortalLogin('dosen')}
                   className="hover:text-white transition-colors text-left flex items-center gap-1"

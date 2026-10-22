@@ -24,6 +24,8 @@ import { GoogleSheetsModal } from './components/GoogleSheetsModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { DosenPortal } from './components/DosenPortal';
 import { MahasiswaPortal } from './components/MahasiswaPortal';
+import { AcademicServicesSection } from './components/AcademicServicesSection';
+import { InitialPortalGateway } from './components/InitialPortalGateway';
 import { ShieldCheck, UserCheck, GraduationCap, Globe, FolderSync, FileSpreadsheet } from 'lucide-react';
 
 function MainAppContent() {
@@ -79,7 +81,14 @@ function MainAppContent() {
 
       {/* Main Page Sections */}
       <main className="flex-1">
-        {/* 1. Hero Section */}
+        {/* Tampilan Awal: Logo Institusi & Pilihan Masuk Mahasiswa, Dosen, dan Admin */}
+        <InitialPortalGateway
+          onOpenPortalLogin={handleOpenPortalLogin}
+          onOpenRegister={() => handleOpenRegister('')}
+          onOpenBrochure={handleOpenBrochure}
+        />
+
+        {/* 1. Hero Section & Informasi Program Studi */}
         <Hero
           onOpenRegister={() => handleOpenRegister('')}
           onOpenBrochure={handleOpenBrochure}
@@ -97,6 +106,13 @@ function MainAppContent() {
 
         {/* 4. Kurikulum & SKS Tiap Semester */}
         <Curriculum />
+
+        {/* 4b. Menu Pelayanan Mahasiswa & Dosen: Akses Tesis & Pembelajaran Online */}
+        <AcademicServicesSection
+          onOpenPortalLogin={handleOpenPortalLogin}
+          onOpenGoogleDrive={() => setIsDriveOpen(true)}
+          onOpenGoogleSheets={() => setIsSheetsOpen(true)}
+        />
 
         {/* 5. Tenaga Pengajar & Pembimbing Tesis */}
         <Faculty />

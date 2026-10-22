@@ -1,0 +1,309 @@
+import React from 'react';
+import {
+  GraduationCap,
+  UserCheck,
+  ShieldCheck,
+  ArrowRight,
+  BookOpen,
+  Video,
+  FileCheck,
+  FileSpreadsheet,
+  Layers,
+  ChevronRight,
+  Lock,
+  Sparkles,
+  Info,
+} from 'lucide-react';
+import { useApp } from '../context/AppContext';
+
+interface InitialPortalGatewayProps {
+  onOpenPortalLogin: (role: 'admin' | 'dosen' | 'mahasiswa') => void;
+  onOpenRegister: () => void;
+  onOpenBrochure: () => void;
+}
+
+export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
+  onOpenPortalLogin,
+  onOpenRegister,
+  onOpenBrochure,
+}) => {
+  const { login, setActivePortalView } = useApp();
+
+  const handleDirectEnter = (role: 'admin' | 'dosen' | 'mahasiswa') => {
+    if (role === 'admin') {
+      login('admin', 'admin.mkm', 'Administrator Pascasarjana MKM');
+    } else if (role === 'dosen') {
+      login('dosen', 'NIDN: 1102047801', 'Dr. Rochmawati, S.KM., M.Kes.');
+    } else {
+      login('mahasiswa', 'NIM: 241021004', 'Ahmad Fauzi, S.KM.');
+    }
+  };
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900 text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 border-b-4 border-amber-400">
+      {/* Background ambient accents */}
+      <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:20px_20px]" />
+      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-500/20 blur-3xl rounded-full pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto flex flex-col items-center text-center">
+        
+        {/* TAMPILAN AWAL: LOGO INSTITUSI */}
+        <div className="mb-6 flex flex-col items-center animate-fade-in">
+          <div className="relative p-3 sm:p-4 rounded-3xl bg-white/95 shadow-2xl ring-4 ring-amber-400/80 mb-4 backdrop-blur-md transition-transform hover:scale-105 duration-300">
+            <img
+              src="/assets/aistudio/UMPontianak_Logo_Warna_2e912afe.png"
+              alt="Logo Universitas Muhammadiyah Pontianak"
+              className="h-20 sm:h-24 md:h-28 w-auto object-contain"
+            />
+          </div>
+
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-semibold tracking-wider uppercase mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Sistem Informasi & Pelayanan Akademik Terpadu</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white max-w-3xl leading-snug">
+            UNIVERSITAS MUHAMMADIYAH PONTIANAK
+          </h1>
+          <p className="text-sm sm:text-base font-semibold text-blue-200 mt-1">
+            Fakultas Ilmu Kesehatan dan Psikologi · Program Studi Magister Kesehatan Masyarakat (MKM)
+          </p>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-2 leading-relaxed">
+            Pusat pelayanan akademik terintegrasi untuk mahasiswa dan dosen. Akses modul bimbingan tesis, 
+            ruang pembelajaran perkuliahan, dan administrasi pascasarjana.
+          </p>
+        </div>
+
+        {/* PROMPT INSTRUKSI PILIHAN MASUK */}
+        <div className="w-full max-w-5xl my-4">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="h-px bg-slate-700 flex-1 max-w-xs" />
+            <span className="text-xs sm:text-sm font-bold uppercase tracking-widest text-amber-300 bg-slate-800/80 px-4 py-1.5 rounded-full border border-slate-700">
+              PILIHAN MASUK PORTAL
+            </span>
+            <div className="h-px bg-slate-700 flex-1 max-w-xs" />
+          </div>
+
+          {/* 3 PILIHAN MASUK: MAHASISWA, DOSEN, DAN ADMIN */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+            
+            {/* KARTU 1: MAHASISWA */}
+            <div className="group relative rounded-2xl bg-gradient-to-b from-slate-800/90 to-slate-900/90 border-2 border-blue-500/40 hover:border-blue-400 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 flex flex-col justify-between overflow-hidden">
+              <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all pointer-events-none" />
+              
+              <div className="p-6 relative z-10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-inner">
+                    <GraduationCap className="w-8 h-8" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    Siswa / Mahasiswa
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold text-white group-hover:text-blue-300 transition-colors">
+                    Portal Mahasiswa
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1">
+                    Layanan mandiri mahasiswa untuk tesis, perkuliahan daring, dan administrasi akademik.
+                  </p>
+                </div>
+
+                {/* Sub-menu fitur mahasiswa */}
+                <div className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
+                  <div className="flex items-start gap-2">
+                    <FileCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span><strong>Akses Tesis:</strong> Pengajuan judul, bimbingan dosen, cek plagiasi Turnitin, dan jadwal ujian sidang.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Video className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <span><strong>Menu Pembelajaran:</strong> Kelas virtual (Meet), LMS Moodle, materi kuliah & jadwal perkuliahan.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <BookOpen className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span><strong>SIAKAD:</strong> KRS online, perolehan nilai KHS, transkrip nilai, dan layanan surat permohonan.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons for Mahasiswa */}
+              <div className="p-6 pt-0 relative z-10 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => handleDirectEnter('mahasiswa')}
+                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-500/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                >
+                  <span>Masuk Portal Mahasiswa</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenPortalLogin('mahasiswa')}
+                  className="w-full py-2 text-center text-xs text-blue-300 hover:text-white transition-colors flex items-center justify-center gap-1"
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Login dengan NIM Mahasiswa</span>
+                </button>
+              </div>
+            </div>
+
+            {/* KARTU 2: DOSEN */}
+            <div className="group relative rounded-2xl bg-gradient-to-b from-slate-800/90 to-slate-900/90 border-2 border-amber-500/40 hover:border-amber-400 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-amber-500/10 flex flex-col justify-between overflow-hidden">
+              <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all pointer-events-none" />
+              
+              <div className="p-6 relative z-10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-600/20 border border-amber-500/40 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300 shadow-inner">
+                    <UserCheck className="w-8 h-8" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Tenaga Pengajar
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                    Portal Dosen
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1">
+                    Layanan dosen untuk pembimbingan tesis, perkuliahan, dan evaluasi hasil belajar mahasiswa.
+                  </p>
+                </div>
+
+                {/* Sub-menu fitur dosen */}
+                <div className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
+                  <div className="flex items-start gap-2">
+                    <GraduationCap className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span><strong>Bimbingan Tesis:</strong> Review draft naskah, logbook bimbingan, persetujuan seminar dan dewan penguji sidang.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Video className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <span><strong>Menu Perkuliahan:</strong> Ruang kelas virtual, unggah silabus/RPS, bahan ajar, dan rekap presensi mahasiswa.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span><strong>Penilaian KHS:</strong> Input nilai semester mahasiswa pascasarjana dan laporan evaluasi mata kuliah.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons for Dosen */}
+              <div className="p-6 pt-0 relative z-10 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => handleDirectEnter('dosen')}
+                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 hover:shadow-amber-400/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                >
+                  <span>Masuk Portal Dosen</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenPortalLogin('dosen')}
+                  className="w-full py-2 text-center text-xs text-amber-300 hover:text-white transition-colors flex items-center justify-center gap-1"
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Login dengan NIDN Dosen</span>
+                </button>
+              </div>
+            </div>
+
+            {/* KARTU 3: ADMIN */}
+            <div className="group relative rounded-2xl bg-gradient-to-b from-slate-800/90 to-slate-900/90 border-2 border-emerald-500/40 hover:border-emerald-400 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 flex flex-col justify-between overflow-hidden">
+              <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
+              
+              <div className="p-6 relative z-10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-inner">
+                    <ShieldCheck className="w-8 h-8" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Pengelola Sistem
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                    Portal Admin
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1">
+                    Pusat kendali prodi untuk manajemen database, verifikasi berkas PMB, dan link pelayanan.
+                  </p>
+                </div>
+
+                {/* Sub-menu fitur admin */}
+                <div className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
+                  <div className="flex items-start gap-2">
+                    <Layers className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span><strong>Database & Cloud:</strong> Integrasi Supabase PostgreSQL, Google Drive explorer, dan Google Sheets data sinkron.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <FileCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span><strong>Verifikasi PMB:</strong> Rekap pendaftar mahasiswa baru, kelayakan dokumen, dan penetapan status kelulusan.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <BookOpen className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <span><strong>Kelola Layanan:</strong> Atur tautan tesis & kuliah, data dosen pembimbing, biaya, dan kurikulum prodi.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons for Admin */}
+              <div className="p-6 pt-0 relative z-10 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => handleDirectEnter('admin')}
+                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                >
+                  <span>Masuk Portal Admin</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenPortalLogin('admin')}
+                  className="w-full py-2 text-center text-xs text-emerald-300 hover:text-white transition-colors flex items-center justify-center gap-1"
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Login Akun Administrator</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Quick jump navigation footer */}
+        <div className="mt-8 pt-6 border-t border-slate-800/80 w-full max-w-5xl flex flex-wrap items-center justify-between gap-4 text-xs text-slate-300">
+          <div className="flex items-center gap-2 text-slate-300">
+            <Info className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>Pilih salah satu portal di atas untuk langsung masuk, atau telusuri menu pelayanan lengkap di bawah:</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <a
+              href="#pelayanan-akademik"
+              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-amber-300 hover:text-white font-medium transition-colors flex items-center gap-1"
+            >
+              <span>Jelajahi Menu Tesis & Pembelajaran ↓</span>
+            </a>
+            <a
+              href="#profil"
+              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white font-medium transition-colors"
+            >
+              Profil & Kurikulum ↓
+            </a>
+            <button
+              type="button"
+              onClick={onOpenRegister}
+              className="px-3 py-1.5 rounded-lg bg-blue-600/80 hover:bg-blue-600 text-white font-semibold transition-colors"
+            >
+              Daftar PMB 2026
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+};

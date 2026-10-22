@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, ArrowRight, User, ShieldCheck, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, ArrowRight, User, ShieldCheck, UserCheck, GraduationCap, LogOut, ChevronDown } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface NavbarProps {
@@ -53,6 +53,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </a>
             <a href="#kurikulum" className="hover:text-blue-900 transition-colors whitespace-nowrap">
               Kurikulum
+            </a>
+            <a href="#pelayanan-akademik" className="hover:text-blue-900 text-amber-700 font-bold transition-colors whitespace-nowrap flex items-center gap-1">
+              <span>Layanan Tesis & Kuliah</span>
             </a>
             <a href="#biaya" className="hover:text-blue-900 transition-colors whitespace-nowrap">
               Simulasi Biaya
@@ -118,15 +121,32 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </div>
             ) : (
-              /* Portal Login Button for Guest */
-              <div className="flex items-center gap-1.5">
+              /* Pilihan Masuk Cepat: Mahasiswa, Dosen, Admin */
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase px-2 hidden xl:inline">Masuk:</span>
+                <button
+                  onClick={() => onOpenPortalLogin('mahasiswa')}
+                  className="px-2.5 py-1.5 text-xs font-bold text-blue-900 hover:bg-white rounded-lg transition-all flex items-center gap-1 shadow-none hover:shadow-sm"
+                  title="Masuk Portal Mahasiswa (Tesis & Pembelajaran)"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Mahasiswa</span>
+                </button>
+                <button
+                  onClick={() => onOpenPortalLogin('dosen')}
+                  className="px-2.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-white rounded-lg transition-all flex items-center gap-1 shadow-none hover:shadow-sm"
+                  title="Masuk Portal Dosen (Bimbingan & Pengajaran)"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Dosen</span>
+                </button>
                 <button
                   onClick={() => onOpenPortalLogin('admin')}
-                  className="px-3 py-2 text-xs font-semibold text-slate-700 hover:text-blue-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                  title="Login Portal Dosen, Mahasiswa, atau Admin"
+                  className="px-2.5 py-1.5 text-xs font-bold text-emerald-900 hover:bg-white rounded-lg transition-all flex items-center gap-1 shadow-none hover:shadow-sm"
+                  title="Masuk Portal Admin"
                 >
-                  <User className="w-3.5 h-3.5 text-blue-900" />
-                  <span>Portal Login</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Admin</span>
                 </button>
               </div>
             )}
@@ -254,6 +274,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               Struktur Kurikulum
             </a>
             <a
+              href="#pelayanan-akademik"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-md hover:bg-amber-50 transition-colors text-amber-900 font-bold flex items-center justify-between"
+            >
+              <span>Layanan Tesis & Pembelajaran</span>
+              <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-semibold">Dosen & Mhs</span>
+            </a>
+            <a
               href="#biaya"
               onClick={() => setMobileMenuOpen(false)}
               className="px-3 py-2 rounded-md hover:bg-slate-50 transition-colors"
@@ -278,16 +306,41 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             {!currentUser && (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenPortalLogin('admin');
-                }}
-                className="w-full py-2.5 px-4 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg text-center flex items-center justify-center gap-2"
-              >
-                <User className="w-4 h-4" />
-                <span>Portal Login (Admin / Dosen / Mahasiswa)</span>
-              </button>
+              <div className="space-y-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-[11px] font-bold text-slate-600 block px-1">Pilihan Masuk Portal:</span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenPortalLogin('mahasiswa');
+                    }}
+                    className="py-2 px-1 text-xs font-bold text-blue-900 bg-blue-100/80 hover:bg-blue-200 rounded-lg text-center flex flex-col items-center justify-center gap-1"
+                  >
+                    <GraduationCap className="w-4 h-4 text-blue-700" />
+                    <span>Mahasiswa</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenPortalLogin('dosen');
+                    }}
+                    className="py-2 px-1 text-xs font-bold text-amber-900 bg-amber-100/80 hover:bg-amber-200 rounded-lg text-center flex flex-col items-center justify-center gap-1"
+                  >
+                    <UserCheck className="w-4 h-4 text-amber-700" />
+                    <span>Dosen</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenPortalLogin('admin');
+                    }}
+                    className="py-2 px-1 text-xs font-bold text-emerald-900 bg-emerald-100/80 hover:bg-emerald-200 rounded-lg text-center flex flex-col items-center justify-center gap-1"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                    <span>Admin</span>
+                  </button>
+                </div>
+              </div>
             )}
             {onOpenGoogleDrive && (
               <button

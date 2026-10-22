@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, UserCheck, GraduationCap, ArrowRight, KeyRound, LogIn } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -19,6 +19,15 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
   const [password, setPassword] = useState('');
   const [customName, setCustomName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedRole(defaultRole);
+      setErrorMsg('');
+      setUsername('');
+      setPassword('');
+    }
+  }, [isOpen, defaultRole]);
 
   if (!isOpen) return null;
 
