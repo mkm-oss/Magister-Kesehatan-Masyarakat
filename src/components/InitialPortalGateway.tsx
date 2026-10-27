@@ -13,6 +13,7 @@ import {
   Lock,
   Sparkles,
   Info,
+  Award,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -74,6 +75,31 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
           </p>
         </div>
 
+        {/* SPOTLIGHT BANNER: SIM-AKREDITASI PRO (9 Kriteria LAM-PTKes) */}
+        <div className="w-full max-w-5xl mb-6 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-blue-900/90 via-slate-900/95 to-emerald-950/90 border-2 border-amber-400/60 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 text-left backdrop-blur-md">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span>Sistem Unggulan · Akreditasi Program Studi S2 MKM</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-white">
+              SIM-Akreditasi PRO (Sistem Informasi Akreditasi & Asesmen)
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Executive Dashboard, Simulator Nilai Real-time (Target Unggul), Pemetaan 9 Kriteria (LED & LKPS), 
+              Repository Bukti Digital Cloud, dan Portal Mode Asesor Audit Eksternal.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActivePortalView('sim_akreditasi')}
+            className="py-3 px-5 rounded-xl font-extrabold text-xs sm:text-sm bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-lg shadow-amber-400/20 flex items-center gap-2 whitespace-nowrap active:scale-[0.98] transition-all shrink-0 cursor-pointer"
+          >
+            <span>Buka SIM-Akreditasi PRO</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
         {/* PROMPT INSTRUKSI PILIHAN MASUK */}
         <div className="w-full max-w-5xl my-4">
           <div className="flex items-center justify-center gap-3 mb-6">
@@ -114,15 +140,15 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
                 <div className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
                   <div className="flex items-start gap-2">
                     <FileCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <span><strong>Akses Tesis:</strong> Pengajuan judul, bimbingan dosen, cek plagiasi Turnitin, dan jadwal ujian sidang.</span>
+                    <span><strong>Bimbingan & Outline Tesis:</strong> Bimbingan berkala, pengajuan outline tesis, cek Turnitin, & jadwal ujian sidang.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Video className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <span><strong>Menu Pembelajaran:</strong> Kelas virtual (Meet), LMS Moodle, materi kuliah & jadwal perkuliahan.</span>
+                    <span><strong>Materi & Pembelajaran:</strong> Video matrikulasi, kelas daring LMS Moodle, & materi kuliah dosen.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <BookOpen className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span><strong>SIAKAD:</strong> KRS online, perolehan nilai KHS, transkrip nilai, dan layanan surat permohonan.</span>
+                    <span><strong>Administrasi & Mutu:</strong> Surat pengambilan data penelitian, evaluasi EDOM dosen, & SIAKAD FIKPsi.</span>
                   </div>
                 </div>
               </div>
@@ -175,15 +201,15 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
                 <div className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
                   <div className="flex items-start gap-2">
                     <GraduationCap className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <span><strong>Bimbingan Tesis:</strong> Review draft naskah, logbook bimbingan, persetujuan seminar dan dewan penguji sidang.</span>
+                    <span><strong>Bimbingan & Review Tesis:</strong> Review draf outline tesis, catatan logbook, & pengujian sidang tesis.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Video className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <span><strong>Menu Perkuliahan:</strong> Ruang kelas virtual, unggah silabus/RPS, bahan ajar, dan rekap presensi mahasiswa.</span>
+                    <span><strong>Perkuliahan & Pengajaran:</strong> Unggah materi/video matrikulasi, ruang kelas virtual, & silabus RPS.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span><strong>Penilaian KHS:</strong> Input nilai semester mahasiswa pascasarjana dan laporan evaluasi mata kuliah.</span>
+                    <span><strong>Mutu & Penilaian:</strong> Hasil evaluasi EDOM dosen magister, agenda prodi, & input nilai SIAKAD.</span>
                   </div>
                 </div>
               </div>
@@ -228,7 +254,7 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
                     Portal Admin
                   </h3>
                   <p className="text-xs text-slate-300 mt-1">
-                    Pusat kendali prodi untuk manajemen database, verifikasi berkas PMB, dan link pelayanan.
+                    Pusat kendali prodi untuk manajemen menu layanan, pengumuman penting, dan database akademik.
                   </p>
                 </div>
 
@@ -236,15 +262,15 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
                 <div className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
                   <div className="flex items-start gap-2">
                     <Layers className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span><strong>Database & Cloud:</strong> Integrasi Supabase PostgreSQL, Google Drive explorer, dan Google Sheets data sinkron.</span>
+                    <span><strong>Kelola Menu Layanan:</strong> Tambah, edit, dan atur visibilitas modul tesis, pembelajaran, & surat.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <FileCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <span><strong>Verifikasi PMB:</strong> Rekap pendaftar mahasiswa baru, kelayakan dokumen, dan penetapan status kelulusan.</span>
+                    <span><strong>Pengumuman & Agenda:</strong> Publikasikan pengumuman penting, broadcast agenda, & verifikasi PMB.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <BookOpen className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <span><strong>Kelola Layanan:</strong> Atur tautan tesis & kuliah, data dosen pembimbing, biaya, dan kurikulum prodi.</span>
+                    <span><strong>Database & Cloud:</strong> Integrasi Supabase PostgreSQL, Google Drive explorer, & Google Sheets.</span>
                   </div>
                 </div>
               </div>
@@ -273,33 +299,15 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
           </div>
         </div>
 
-        {/* Quick jump navigation footer */}
-        <div className="mt-8 pt-6 border-t border-slate-800/80 w-full max-w-5xl flex flex-wrap items-center justify-between gap-4 text-xs text-slate-300">
-          <div className="flex items-center gap-2 text-slate-300">
+        {/* Bottom Gateway Helper Text */}
+        <div className="mt-8 pt-6 border-t border-slate-800/80 w-full max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+          <div className="flex items-center gap-2">
             <Info className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Pilih salah satu portal di atas untuk langsung masuk, atau telusuri menu pelayanan lengkap di bawah:</span>
+            <span>Pilih salah satu portal di atas untuk masuk langsung ke sistem pelayanan tesis & pembelajaran.</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <a
-              href="#pelayanan-akademik"
-              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-amber-300 hover:text-white font-medium transition-colors flex items-center gap-1"
-            >
-              <span>Jelajahi Menu Tesis & Pembelajaran ↓</span>
-            </a>
-            <a
-              href="#profil"
-              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white font-medium transition-colors"
-            >
-              Profil & Kurikulum ↓
-            </a>
-            <button
-              type="button"
-              onClick={onOpenRegister}
-              className="px-3 py-1.5 rounded-lg bg-blue-600/80 hover:bg-blue-600 text-white font-semibold transition-colors"
-            >
-              Daftar PMB 2026
-            </button>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500">© Program Studi MKM FIKPsi Universitas Muhammadiyah Pontianak</span>
           </div>
         </div>
 

@@ -61,6 +61,39 @@ export interface AcademicLink {
   iconName: string;
 }
 
+export interface PortalMenuItem {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  category: 'Akademik' | 'Pembelajaran' | 'Mutu' | 'Administrasi' | 'Keuangan' | string;
+  icon: string; // Emoji icon e.g. 🎓, 📝, 🎬, 📊, ✉️, 🏛️
+  order: number;
+  active: boolean;
+  targetAudience: 'Semua' | 'Mahasiswa' | 'Dosen';
+}
+
+export interface AnnouncementItem {
+  id: string;
+  title: string;
+  content: string;
+  isImportant: boolean;
+  target: 'Semua' | 'Mahasiswa' | 'Dosen';
+  authorName: string;
+  authorRole: 'Admin' | 'Dosen';
+  createdAt: string;
+}
+
+export interface ReminderItem {
+  id: string;
+  title: string;
+  content: string;
+  dateTime: string;
+  target: 'Semua' | 'Mahasiswa' | 'Dosen' | 'Saya';
+  authorName: string;
+  authorRole: 'Admin' | 'Dosen' | 'Mahasiswa';
+}
+
 export interface ApplicantRecord {
   id: string;
   registrationNumber: string;
@@ -391,6 +424,161 @@ export const DEFAULT_ACADEMIC_LINKS: AcademicLink[] = [
     description: 'Cek tagihan SPP semester, konfirmasi pembayaran angsuran, dan unduh kuitansi resmi universitas.',
     badge: 'Keuangan',
     iconName: 'CreditCard',
+  },
+];
+
+// Adaptasi Menu Layanan Inti dari Portal MKM Apps Script (MENU_AWAL)
+export const DEFAULT_PORTAL_MENUS: PortalMenuItem[] = [
+  {
+    id: 'menu-1',
+    title: 'Bimbingan Tesis',
+    description: 'Catat logbook bimbingan, jadwal konsultasi pembimbing 1 & 2, dan tahapan naskah tesis',
+    url: 'https://tesis.unmuhpnk.ac.id/mkm',
+    category: 'Akademik',
+    icon: '🎓',
+    order: 1,
+    active: true,
+    targetAudience: 'Semua',
+  },
+  {
+    id: 'menu-2',
+    title: 'Pengajuan Outline Tesis',
+    description: 'Ajukan usulan topik penelitian dan pantau proses verifikasi outline tesis',
+    url: 'https://tesis.unmuhpnk.ac.id/outline',
+    category: 'Akademik',
+    icon: '📝',
+    order: 2,
+    active: true,
+    targetAudience: 'Semua',
+  },
+  {
+    id: 'menu-3',
+    title: 'Materi dan Video Matrikulasi',
+    description: 'Unduh bahan ajar kuliah, modul RPS dan tonton rekaman penjelasan dosen pengampu',
+    url: 'https://elearning.unmuhpnk.ac.id/course/index.php?categoryid=mkm',
+    category: 'Pembelajaran',
+    icon: '🎬',
+    order: 3,
+    active: true,
+    targetAudience: 'Semua',
+  },
+  {
+    id: 'menu-4',
+    title: 'EDOM Dosen Magister',
+    description: 'Evaluasi Dosen Oleh Mahasiswa (EDOM) untuk penjaminan mutu mutu akademik berkala',
+    url: 'https://mutu.unmuhpnk.ac.id/edom-mkm',
+    category: 'Mutu',
+    icon: '📊',
+    order: 4,
+    active: true,
+    targetAudience: 'Semua',
+  },
+  {
+    id: 'menu-5',
+    title: 'Surat Pengambilan Data',
+    description: 'Pengelolaan surat permohonan izin survei, pengambilan data dan uji kelayakan etik (EC)',
+    url: 'https://fikpsi.unmuhpnk.ac.id/layanan-surat',
+    category: 'Administrasi',
+    icon: '✉️',
+    order: 5,
+    active: true,
+    targetAudience: 'Semua',
+  },
+  {
+    id: 'menu-6',
+    title: 'Portal Akademik FIKPsi',
+    description: 'Sistem informasi layanan akademik fakultas, pengisian KRS, dan rekapitulasi nilai KHS',
+    url: 'https://siakad.unmuhpnk.ac.id',
+    category: 'Administrasi',
+    icon: '🏛️',
+    order: 6,
+    active: true,
+    targetAudience: 'Semua',
+  },
+  {
+    id: 'menu-7',
+    title: 'Cek Uji Turnitin Anti-Plagiasi',
+    description: 'Fasilitas pengecekan similaritas naskah proposal dan tesis pascasarjana',
+    url: 'https://turnitin.unmuhpnk.ac.id',
+    category: 'Akademik',
+    icon: '🔍',
+    order: 7,
+    active: true,
+    targetAudience: 'Semua',
+  },
+  {
+    id: 'menu-8',
+    title: 'Perpustakaan & Repositori Tesis',
+    description: 'Akses repository tesis pascasarjana, e-book dan jurnal internasional terindeks',
+    url: 'https://digilib.unmuhpnk.ac.id',
+    category: 'Pembelajaran',
+    icon: '📚',
+    order: 8,
+    active: true,
+    targetAudience: 'Semua',
+  },
+];
+
+export const DEFAULT_ANNOUNCEMENTS: AnnouncementItem[] = [
+  {
+    id: 'inf-1',
+    title: 'Jadwal Pengumpulan Draf Outline Tesis Gelombang I',
+    content: 'Batas akhir pengumpulan draf outline tesis semester ini adalah tanggal 30 bulan berjalan. Silakan unggah berkas lengkap melalui menu Pengajuan Outline Tesis.',
+    isImportant: true,
+    target: 'Mahasiswa',
+    authorName: 'Dr. Rochmawati, S.KM., M.Kes.',
+    authorRole: 'Dosen',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'inf-2',
+    title: 'Jadwal Rapat Koordinasi Kurikulum MKM & Beban Mengajar',
+    content: 'Rapat koordinasi kurikulum dan beban mengajar semester genap akan dilaksanakan di Ruang Rapat Lt. 2 FIKPsi UM Pontianak pada hari Rabu pukul 10.00 WIB.',
+    isImportant: true,
+    target: 'Dosen',
+    authorName: 'Admin Prodi MKM',
+    authorRole: 'Admin',
+    createdAt: new Date(Date.now() - 43200000).toISOString(),
+  },
+  {
+    id: 'inf-3',
+    title: 'Workshop Metodologi Penelitian Kesehatan Masyarakat',
+    content: 'Diadakan hari Sabtu pukul 09.00 WIB secara daring melalui Google Meet. Tautan ruang kelas dan materi telah dibagikan di menu Pembelajaran.',
+    isImportant: false,
+    target: 'Semua',
+    authorName: 'Admin Prodi MKM',
+    authorRole: 'Admin',
+    createdAt: new Date(Date.now() - 172800000).toISOString(),
+  },
+];
+
+export const DEFAULT_REMINDERS: ReminderItem[] = [
+  {
+    id: 'ing-1',
+    title: 'Batas Penyerahan Revisi Proposal Tesis',
+    content: 'Serahkan revisi naskah proposal kepada dosen pembimbing utama dan pembimbing pendamping.',
+    dateTime: new Date(Date.now() + 2 * 86400000).toISOString(),
+    target: 'Mahasiswa',
+    authorName: 'Dr. Rochmawati, S.KM., M.Kes.',
+    authorRole: 'Dosen',
+  },
+  {
+    id: 'ing-2',
+    title: 'Kuliah Matrikulasi Biostatistik Lanjutan',
+    content: 'Pembahasan modul 3 analisis multivariat dan penugasan mandiri di LMS.',
+    dateTime: new Date(Date.now() + 4 * 86400000).toISOString(),
+    target: 'Semua',
+    authorName: 'Admin Prodi MKM',
+    authorRole: 'Admin',
+  },
+  {
+    id: 'ing-3',
+    title: 'Batas Pengisian Nilai Ujian Sisipan & KHS',
+    content: 'Input nilai ujian mahasiswa melalui portal akademik SIAKAD fakultas.',
+    dateTime: new Date(Date.now() + 3 * 86400000).toISOString(),
+    target: 'Dosen',
+    authorName: 'Admin Prodi MKM',
+    authorRole: 'Admin',
   },
 ];
 

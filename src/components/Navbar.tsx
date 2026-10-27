@@ -43,30 +43,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </a>
 
-          {/* Zone 2: Navigation Links (Single-line, clean, Peminatan updated) */}
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="#profil" className="hover:text-blue-900 transition-colors whitespace-nowrap">
-              Profil & Visi
-            </a>
-            <a href="#peminatan" className="hover:text-blue-900 transition-colors whitespace-nowrap">
-              Peminatan
-            </a>
-            <a href="#kurikulum" className="hover:text-blue-900 transition-colors whitespace-nowrap">
-              Kurikulum
-            </a>
-            <a href="#pelayanan-akademik" className="hover:text-blue-900 text-amber-700 font-bold transition-colors whitespace-nowrap flex items-center gap-1">
-              <span>Layanan Tesis & Kuliah</span>
-            </a>
-            <a href="#biaya" className="hover:text-blue-900 transition-colors whitespace-nowrap">
-              Simulasi Biaya
-            </a>
-            <a href="#pendaftaran" className="hover:text-blue-900 transition-colors whitespace-nowrap">
-              Jalur PMB
-            </a>
-            <a href="#faq" className="hover:text-blue-900 transition-colors whitespace-nowrap">
-              FAQ
-            </a>
-          </nav>
+          {/* Center Brand Identity Badge (Portal Sistem Informasi) */}
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50/80 border border-blue-100 text-blue-900 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Portal Sistem Informasi & Pelayanan Akademik Terpadu</span>
+          </div>
 
           {/* Zone 3: Primary Actions & User Portal Controls */}
           <div className="hidden sm:flex items-center gap-3 shrink-0">
@@ -251,58 +232,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          <nav className="flex flex-col space-y-2 text-sm font-medium text-slate-700">
-            <a
-              href="#profil"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-md hover:bg-slate-50 transition-colors"
-            >
-              Profil & Visi
-            </a>
-            <a
-              href="#peminatan"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-md hover:bg-slate-50 transition-colors"
-            >
-              Peminatan Studi
-            </a>
-            <a
-              href="#kurikulum"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-md hover:bg-slate-50 transition-colors"
-            >
-              Struktur Kurikulum
-            </a>
-            <a
-              href="#pelayanan-akademik"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-md hover:bg-amber-50 transition-colors text-amber-900 font-bold flex items-center justify-between"
-            >
-              <span>Layanan Tesis & Pembelajaran</span>
-              <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-semibold">Dosen & Mhs</span>
-            </a>
-            <a
-              href="#biaya"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-md hover:bg-slate-50 transition-colors"
-            >
-              Simulasi Biaya Kuliah
-            </a>
-            <a
-              href="#pendaftaran"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-md hover:bg-slate-50 transition-colors"
-            >
-              Jalur & Syarat PMB
-            </a>
-            <a
-              href="#faq"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-md hover:bg-slate-50 transition-colors"
-            >
-              Tanya Jawab (FAQ)
-            </a>
-          </nav>
+          <div className="p-3 bg-blue-50/80 rounded-xl text-xs text-blue-950 text-center font-medium">
+            Sistem Informasi Pelayanan Tesis & Perkuliahan Pascasarjana MKM FIKPsi UM Pontianak
+          </div>
 
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             {!currentUser && (

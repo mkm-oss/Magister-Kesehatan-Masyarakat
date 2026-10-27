@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portal Sistem Informasi MKM – UM Pontianak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --b: #054DA0;
+  --bd: #032B5B;
+  --bl: #EBF3FC;
+  --g: #F5BA13;
+  --gl: #FEF8E7;
+  --h: #0E9549;
+  --hl: #E8F7EE;
+  --t: #16202E;
+  --m: #5B6B82;
+  --l: #DCE5F0;
+  --bg: #F4F7FC;
+  --card: #FFFFFF;
+  --r: #D92D20;
+  --rl: #FEE4E2;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 16px -2px rgba(5, 77, 160, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(5, 77, 160, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 15px/1.6 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color: var(--t);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+.hide { display: none !important; }
+.m { color: var(--m); }
+.pre { white-space: pre-wrap; margin: 8px 0; line-height: 1.6; }
+button, input, textarea, select { font: inherit; }
+
+/* Buttons */
+.btn {
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--b);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all .15s ease;
+  text-decoration: none;
+}
+.btn:hover { background: var(--bd); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn:active { transform: scale(0.98); }
+.btn.g { background: var(--g); color: #16202E; }
+.btn.g:hover { background: #E5AC0B; }
+.btn.o { background: #fff; color: var(--b); border: 1.5px solid var(--l); }
+.btn.o:hover { background: var(--bl); border-color: var(--b); }
+.btn.danger { background: var(--rl); color: var(--r); }
+.btn.danger:hover { background: #fcd5d3; }
+.btn:disabled { opacity: .6; cursor: wait; pointer-events: none; }
+:focus-visible { outline: 3px solid var(--g); outline-offset: 2px; }
+
+/* Inputs */
+input, textarea, select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--l);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--t);
+  transition: border-color .15s, box-shadow .15s;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--b);
+  box-shadow: 0 0 0 3px rgba(5, 77, 160, 0.12);
+}
+label { display: block; font-weight: 700; margin: 14px 0 6px; font-size: 13.5px; color: var(--t); }
+
+/* Logo UM */
+.lg {
+  display: grid;
+  place-items: center;
+  background: var(--g) center/contain no-repeat;
+  border-radius: 14px;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  color: #1b1b1b;
+  font-weight: 800;
+  font-size: 15px;
+  box-shadow: var(--shadow-sm);
+}
+.lg.has { background-color: transparent; font-size: 0; }
+
+/* ========================================================
+   LANDING / PILIHAN AKSES (TANPA KOLOM LOGIN)
+======================================================== */
+.portal-landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: radial-gradient(circle at 10% 10%, #EBF3FC 0%, #F4F7FC 60%, #E6EEF8 100%);
+  position: relative;
+  overflow: hidden;
+}
+.portal-landing::before {
+  content: "";
+  position: absolute;
+  top: -150px;
+  right: -150px;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(5, 77, 160, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.landing-wrap {
+  width: 100%;
+  max-width: 860px;
+  z-index: 2;
+}
+.landing-header {
+  text-align: center;
+  margin-bottom: 34px;
+}
+.landing-header .lg {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 16px;
+  border-radius: 20px;
+}
+.inst-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(5, 77, 160, 0.09);
+  color: var(--b);
+  padding: 4px 14px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.landing-header h1 {
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 800;
+  color: var(--bd);
+  margin: 4px 0 8px;
+  line-height: 1.25;
+}
+.landing-header p {
+  color: var(--m);
+  margin: 0 auto;
+  font-size: 15.5px;
+  max-width: 580px;
+}
+.landing-prompt {
+  text-align: center;
+  margin-bottom: 22px;
+}
+.landing-prompt h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--t);
+  margin: 0 0 4px;
+}
+.landing-prompt p {
+  color: var(--m);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Two Role Cards (Mahasiswa & Dosen) */
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-bottom: 22px;
+}
+.role-card {
+  background: var(--card);
+  border: 2px solid var(--l);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+}
+.role-card:hover {
+  border-color: var(--b);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.role-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+.role-icon-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  margin-bottom: 18px;
+  transition: transform .2s ease;
+}
+.role-card:hover .role-icon-box {
+  transform: scale(1.08);
+}
+.role-card.mhs .role-icon-box {
+  background: linear-gradient(135deg, #FFF3D6, #FFE4A0);
+  color: #B27B00;
+}
+.role-card.dsn .role-icon-box {
+  background: linear-gradient(135deg, #E2F0FD, #C9E2FB);
+  color: var(--b);
+}
+.role-tag {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  margin-bottom: 8px;
+}
+.role-card.mhs .role-tag {
+  background: var(--gl);
+  color: #8C6200;
+}
+.role-card.dsn .role-tag {
+  background: var(--bl);
+  color: var(--b);
+}
+.role-card h3 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: var(--bd);
+}
+.role-card p {
+  color: var(--m);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+  flex: 1;
+}
+.role-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  color: #334155;
+  border-top: 1px solid var(--l);
+  padding-top: 14px;
+}
+.role-features li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.role-features li span {
+  font-size: 14px;
+}
+.role-btn-mock {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all .15s ease;
+}
+.role-card.mhs .role-btn-mock {
+  background: var(--g);
+  color: #1A1A1A;
+}
+.role-card.mhs:hover .role-btn-mock {
+  background: #E5AC0B;
+}
+.role-card.dsn .role-btn-mock {
+  background: var(--b);
+  color: #fff;
+}
+.role-card.dsn:hover .role-btn-mock {
+  background: var(--bd);
+}
+
+/* Loading status inside landing */
+.landing-status {
+  text-align: center;
+  margin-top: 14px;
+  min-height: 24px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--b);
+}
+.landing-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 12.5px;
+  color: var(--m);
+}
+.admin-opt-btn {
+  background: none;
+  border: none;
+  color: var(--m);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: all .15s;
+}
+.admin-opt-btn:hover {
+  color: var(--b);
+  background: rgba(5, 77, 160, 0.06);
+}
+
+/* ========================================================
+   SHELL APLIKASI (SIDEBAR & MAIN VIEW)
+======================================================== */
+.shell {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  min-height: 100vh;
+}
+.side {
+  background: linear-gradient(180deg, var(--bd) 0%, #032044 100%);
+  color: #fff;
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+}
+.side .lh {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 16px;
+}
+.side .lh .brand-text {
+  line-height: 1.25;
+}
+.side .lh b {
+  font-size: 16px;
+  display: block;
+  letter-spacing: -0.2px;
+}
+.side .lh small {
+  color: #A9C4E8;
+  font-size: 12px;
+  display: block;
+}
+
+/* User Profile Badge in Sidebar */
+.user-badge-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--g);
+  color: #1a1a1a;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 16px;
+  flex: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+.user-info .u-name {
+  font-weight: 700;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.user-info .u-role {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFDE72;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
+}
+
+/* Navigation items */
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.nv {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #D1E1F5;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  text-align: left;
+  transition: all .15s ease;
+  position: relative;
+}
+.nv:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateX(2px);
+}
+.nv.on {
+  background: #fff;
+  color: var(--b);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.nv .i {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex: none;
+}
+.nv .n {
+  margin-left: auto;
+  background: var(--r);
+  color: #fff;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  min-width: 18px;
+  text-align: center;
+}
+.nv.on .n {
+  background: var(--b);
+}
+
+/* Sidebar Bottom (Switch role / Logout) */
+.side-foot {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.switch-role-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.1);
+  color: #D8E6F7;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all .15s;
+}
+.switch-role-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* Top Bar */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 32px;
+  background: #fff;
+  border-bottom: 1px solid var(--l);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.top h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  flex: 1;
+  color: var(--bd);
+}
+.top .dt {
+  color: var(--m);
+  font-size: 13px;
+  font-weight: 500;
+}
+.top-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bl);
+  color: var(--b);
+  border: 1px solid rgba(5, 77, 160, 0.18);
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+main {
+  padding: 28px 32px 80px;
+  max-width: 1220px;
+}
+
+/* Cards & Content */
+.card {
+  background: #fff;
+  border: 1px solid var(--l);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  margin: 14px 0;
+  box-shadow: var(--shadow-sm);
+}
+.card.new {
+  border-left: 5px solid var(--g);
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+h2 { margin: 0 0 10px; font-size: 22px; font-weight: 800; color: var(--bd); }
+h3 { margin: 0 0 8px; font-size: 17px; font-weight: 800; color: var(--bd); }
+
+/* ========================================================
+   BERANDA (HERO & KPI STATS)
+======================================================== */
+.hero2 {
+  background: linear-gradient(135deg, var(--bd) 0%, var(--b) 50%, #0c67d1 100%);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 30px 32px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.hero2::after {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(245, 186, 19, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero2 h2 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  color: #fff;
+}
+.hero2 p {
+  margin: 0 0 20px;
+  color: #D3E5FA;
+  font-size: 15px;
+  max-width: 640px;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Stats */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.st2 {
+  background: #fff;
+  border: 1px solid var(--l);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .15s ease;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.st2:hover {
+  border-color: var(--b);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.st2 .i-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--bl);
+  color: var(--b);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  flex: none;
+}
+.st2 .st-val {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--bd);
+  display: block;
+}
+.st2 .st-lbl {
+  color: var(--m);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Layout 2 columns */
+.two {
+  display: grid;
+  grid-template-columns: 1.75fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+/* ========================================================
+   MENU CARDS (USER-FRIENDLY & MODERN)
+======================================================== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 18px;
+}
+.mc {
+  position: relative;
+  background: #fff;
+  border: 1.5px solid var(--l);
+  border-radius: var(--radius-md);
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+.mc:hover {
+  transform: translateY(-3px);
+  border-color: var(--b);
+  box-shadow: var(--shadow-md);
+}
+.mc-inner {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+.mc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.mc .ic-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--bl);
+  color: var(--b);
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  transition: transform .15s;
+}
+.mc:hover .ic-box {
+  transform: scale(1.06);
+}
+.mc .s {
+  border: 0;
+  background: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #C3CDDA;
+  padding: 4px;
+  border-radius: 8px;
+  line-height: 1;
+  transition: color .15s, transform .15s;
+}
+.mc .s:hover {
+  color: #F5BA13;
+  transform: scale(1.15);
+}
+.mc .s.on {
+  color: #F5BA13;
+}
+.mc b {
+  color: var(--bd);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+.mc .desc {
+  color: var(--m);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin-bottom: 14px;
+  flex: 1;
+}
+.mc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #EEF3F8;
+  padding-top: 12px;
+  margin-top: auto;
+}
+.mc .tg {
+  font-size: 11.5px;
+  color: var(--b);
+  background: var(--bl);
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+.mc .go-btn {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--b);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mc:hover .go-btn {
+  color: var(--bd);
+  text-decoration: underline;
+}
+.mc.off {
+  opacity: .7;
+}
+.mc.off:hover {
+  transform: none;
+  border-color: var(--l);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Category Filter Chips & Search */
+.menu-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.search-box {
+  position: relative;
+  max-width: 440px;
+}
+.search-box input {
+  padding-left: 42px;
+  padding-right: 36px;
+  font-size: 14.5px;
+  border-radius: 99px;
+}
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--m);
+  font-size: 17px;
+  pointer-events: none;
+}
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chip {
+  border: 1.5px solid var(--l);
+  background: #fff;
+  border-radius: 99px;
+  padding: 7px 16px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--m);
+  cursor: pointer;
+  transition: all .15s;
+}
+.chip:hover {
+  border-color: var(--b);
+  color: var(--b);
+  background: var(--bl);
+}
+.chip.on {
+  background: var(--b);
+  border-color: var(--b);
+  color: #fff;
+}
+
+/* Badges */
+.bd {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: #E8EEF7;
+  color: var(--b);
+  display: inline-block;
+}
+.bd.ok { background: var(--hl); color: #0A6B34; }
+.bd.wt { background: var(--gl); color: #8A6500; }
+.bd.rv { background: var(--rl); color: var(--r); }
+
+/* Right Column Cards */
+.ag {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--l);
+}
+.ag:last-child { border: 0; }
+.ag .d {
+  background: var(--bl);
+  color: var(--b);
+  border-radius: 12px;
+  padding: 8px 10px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.1;
+  min-width: 54px;
+}
+.ag .d small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cmt {
+  background: #F8FAFD;
+  border: 1px solid var(--l);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin: 10px 0;
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  background: #1E293B;
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 99px;
+  font-weight: 700;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 99;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+#toast.bad { background: var(--r); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .role-grid { grid-template-columns: 1fr; gap: 16px; }
+  .shell { grid-template-columns: 1fr; }
+  .side {
+    position: fixed;
+    inset: auto 0 0 0;
+    height: auto;
+    flex-direction: row;
+    padding: 8px 10px;
+    z-index: 50;
+    justify-content: space-around;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .side .lh, .user-badge-card, .side-foot { display: none; }
+  .nav-group { flex-direction: row; justify-content: space-around; width: 100%; }
+  .nv {
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+    padding: 6px 10px;
+    text-align: center;
+    border-radius: 8px;
+  }
+  .nv:hover { transform: none; }
+  .nv .n { position: absolute; top: 0; right: 8px; margin: 0; }
+  .top { padding: 12px 18px; }
+  main { padding: 18px 16px 95px; }
+  .two { grid-template-columns: 1fr; }
+  .hero2 { padding: 22px; }
+  #toast { bottom: 80px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========================================================
+     HALAMAN PILIHAN AKSES (TANPA KOLOM EMAIL/PIN)
+======================================================== -->
+<section id="login" class="portal-landing">
+  <div class="landing-wrap">
+    
+    <div class="landing-header">
+      <div class="lg" role="img" aria-label="Logo Universitas Muhammadiyah Pontianak">UM</div>
+      <div class="inst-badge">Universitas Muhammadiyah Pontianak</div>
+      <h1>Portal Sistem Informasi MKM</h1>
+      <p>Program Studi Magister Kesehatan Masyarakat · FIKPsi UM Pontianak</p>
+    </div>
+
+    <div class="landing-prompt">
+      <h2>Pilih Akses Masuk</h2>
+      <p>Pilih peran di bawah untuk langsung membuka portal sistem akademik tanpa perlu memasukkan password</p>
+    </div>
+
+    <!-- 2 Pilihan Utama: Mahasiswa & Dosen -->
+    <div class="role-grid">
+      
+      <!-- Kartu Akses Mahasiswa -->
+      <div class="role-card mhs" onclick="masukSebagai('Mahasiswa')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')masukSebagai('Mahasiswa')">
+        <div class="role-icon-box">🎓</div>
+        <span class="role-tag">Akses Mahasiswa</span>
+        <h3>Mahasiswa</h3>
+        <p>Akses layanan perkuliahan, bimbingan tesis, pengajuan outline, dan informasi kegiatan akademik MKM.</p>
+        
+        <ul class="role-features">
+          <li><span>📝</span> Bimbingan & Outline Tesis</li>
+          <li><span>🎬</span> Materi & Video Matrikulasi</li>
+          <li><span>📢</span> Pengumuman & Agenda Perkuliahan</li>
+        </ul>
+
+        <div class="role-btn-mock">Masuk sebagai Mahasiswa ➔</div>
+      </div>
+
+      <!-- Kartu Akses Dosen -->
+      <div class="role-card dsn" onclick="masukSebagai('Dosen')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')masukSebagai('Dosen')">
+        <div class="role-icon-box">👨‍🏫</div>
+        <span class="role-tag">Akses Pendidik</span>
+        <h3>Dosen</h3>
+        <p>Akses bimbingan tesis mahasiswa, agenda mengajar, publikasi pengumuman prodi, dan evaluasi mutu EDOM.</p>
+        
+        <ul class="role-features">
+          <li><span>🎓</span> Pembimbingan & Tesis Mahasiswa</li>
+          <li><span>📢</span> Terbitkan Pengumuman & Pengingat</li>
+          <li><span>📊</span> Hasil EDOM & Mutu Akademik</li>
+        </ul>
+
+        <div class="role-btn-mock">Masuk sebagai Dosen ➔</div>
+      </div>
+
+    </div>
+
+    <div id="landing-status" class="landing-status" role="status"></div>
+
+    <div class="landing-footer">
+      <button type="button" class="admin-opt-btn" onclick="masukSebagai('Admin')">⚙️ Akses Administrator / Pengelola Prodi</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- ========================================================
+     APLIKASI UTAMA SETELAH AKSES TERPILIH
+======================================================== -->
+<section id="app" class="shell hide">
+  <!-- Sidebar -->
+  <nav class="side" id="nav" aria-label="Menu utama"></nav>
+
+  <!-- Content Area -->
+  <div>
+    <div class="top">
+      <h1 id="pt">Beranda</h1>
+      <div class="top-role-pill" id="top-role-indicator">🎓 Mahasiswa</div>
+      <span class="dt" id="dt"></span>
+    </div>
+    <main id="main"></main>
+  </div>
+</section>
+
+<!-- Toast notification -->
+<div id="toast" role="status"></div>
+
+<script>
+const LOGO = 'data:image/png;base64,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';
+
+let A = {}, U = null, D = null, TAB = 'h', CAT = 'Semua', Q = '', LAST = 0, PT = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const url = u => /^https?:\/\//i.test(u) ? esc(u) : '#';
+const fmt = s => { const d = new Date(s); return !s || isNaN(d) ? '-' : d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }); };
+const left = w => { const d = new Date(w) - Date.now(), h = Math.round(d / 36e5); if (isNaN(d)) return ''; if (d < 0) return 'sudah lewat'; if (h < 1) return 'kurang dari 1 jam lagi'; if (h < 24) return h + ' jam lagi'; return Math.round(h / 24) + ' hari lagi'; };
+const tgl = t => t == 'Semua' ? 'Semua pengguna' : t.includes('@') ? 'Pribadi' : t;
+const own = x => U && (U.Peran == 'Admin' || x.PembuatEmail == U.Email);
+const isNew = x => D && D.dibaca && !D.dibaca.includes(x.ID) && x.PembuatEmail != U.Email;
+const nI = () => D ? D.info.filter(isNew).length : 0;
+const nR = () => D ? D.ing.filter(isNew).length : 0;
+const unread = () => nI() + nR();
+
+/* Fallback mock data jika dijalankan offline di browser lokal */
+const MOCK_DATA = {
+  Mahasiswa: {
+    user: { Email: 'mahasiswa@mkm.umpontianak.ac.id', Nama: 'Mahasiswa MKM', Peran: 'Mahasiswa' },
+    menu: [
+      { ID: '1', Judul: 'Bimbingan Tesis', Deskripsi: 'Catat bimbingan, jadwal, dan tahapan tesis mahasiswa', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Akademik', Ikon: '🎓', Urutan: '1', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '2', Judul: 'Pengajuan Outline Tesis', Deskripsi: 'Ajukan dan pantau status persetujuan outline tesis', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Akademik', Ikon: '📝', Urutan: '2', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '3', Judul: 'Materi & Video Matrikulasi', Deskripsi: 'Unduh materi kuliah dan tonton rekaman penjelasan dosen', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Pembelajaran', Ikon: '🎬', Urutan: '3', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '4', Judul: 'Surat Pengambilan Data', Deskripsi: 'Layanan administrasi surat izin survei & riset penelitian', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Administrasi', Ikon: '✉️', Urutan: '4', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '5', Judul: 'Portal Akademik FIKPsi', Deskripsi: 'Sistem informasi layanan akademik terpadu fakultas', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Administrasi', Ikon: '🏛️', Urutan: '5', Aktif: 'Ya', Untuk: 'Semua' }
+    ],
+    info: [
+      { ID: 'inf-1', Judul: 'Jadwal Pengumpulan Draf Outline Tesis Gelombang I', Isi: 'Batas akhir pengumpulan draf outline tesis semester ini adalah tanggal 30 bulan berjalan. Silakan unggah berkas lengkap melalui menu Pengajuan Outline Tesis.', Penting: 'Ya', Target: 'Mahasiswa', PembuatNama: 'Dr. Dosen Contoh, M.Kes', Peran: 'Dosen', Dibuat: new Date(Date.now() - 864e5).toISOString() },
+      { ID: 'inf-2', Judul: 'Workshop Metodologi Penelitian Kesehatan Masyarakat', Isi: 'Diadakan hari Sabtu pukul 09.00 WIB secara daring. Tautan Zoom akan dikirimkan ke email peserta.', Penting: '', Target: 'Semua', PembuatNama: 'Admin Prodi MKM', Peran: 'Admin', Dibuat: new Date(Date.now() - 1728e5).toISOString() }
+    ],
+    ing: [
+      { ID: 'ing-1', Judul: 'Batas Penyerahan Revisi Proposal', Isi: 'Serahkan revisi kepada dosen pembimbing utama.', Waktu: new Date(Date.now() + 1728e5).toISOString(), Target: 'Mahasiswa', PembuatNama: 'Dr. Dosen Contoh, M.Kes', Peran: 'Dosen' },
+      { ID: 'ing-2', Judul: 'Kuliah Matrikulasi Biostatistik', Isi: 'Materi modul 3 dan tugas mandiri.', Waktu: new Date(Date.now() + 3456e5).toISOString(), Target: 'Semua', PembuatNama: 'Admin Prodi MKM', Peran: 'Admin' }
+    ],
+    dibaca: []
+  },
+  Dosen: {
+    user: { Email: 'dosen@mkm.umpontianak.ac.id', Nama: 'Dr. Dosen MKM, M.Kes', Peran: 'Dosen' },
+    menu: [
+      { ID: '1', Judul: 'Bimbingan Tesis', Deskripsi: 'Pantau catatan bimbingan dan kemajuan tesis mahasiswa bimbingan', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Akademik', Ikon: '🎓', Urutan: '1', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '2', Judul: 'Pengajuan Outline Tesis', Deskripsi: 'Review dan berikan masukan proposal outline tesis', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Akademik', Ikon: '📝', Urutan: '2', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '3', Judul: 'EDOM Dosen Magister', Deskripsi: 'Rekapitulasi hasil evaluasi dosen oleh mahasiswa prodi', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Mutu', Ikon: '📊', Urutan: '3', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '4', Judul: 'Materi & Video Matrikulasi', Deskripsi: 'Kelola bahan tayang dan tautan video perkuliahan', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Pembelajaran', Ikon: '🎬', Urutan: '4', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '5', Judul: 'Portal Akademik FIKPsi', Deskripsi: 'Layanan administrasi nilai dan perkuliahan fakultas', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Administrasi', Ikon: '🏛️', Urutan: '5', Aktif: 'Ya', Untuk: 'Semua' }
+    ],
+    info: [
+      { ID: 'inf-1', Judul: 'Jadwal Rapat Koordinasi Kurikulum MKM', Isi: 'Rapat koordinasi kurikulum dan beban mengajar semester genap akan dilaksanakan di Ruang Rapat Lt. 2 FIKPsi.', Penting: 'Ya', Target: 'Dosen', PembuatNama: 'Admin Prodi MKM', Peran: 'Admin', Dibuat: new Date(Date.now() - 432e5).toISOString() }
+    ],
+    ing: [
+      { ID: 'ing-1', Judul: 'Batas Pengisian Nilai Ujian Sisipan', Isi: 'Input nilai melalui portal akademik fakultas.', Waktu: new Date(Date.now() + 2592e5).toISOString(), Target: 'Dosen', PembuatNama: 'Admin Prodi MKM', Peran: 'Admin' }
+    ],
+    dibaca: []
+  },
+  Admin: {
+    user: { Email: 'admin@mkm.umpontianak.ac.id', Nama: 'Admin Prodi MKM', Peran: 'Admin' },
+    menu: [
+      { ID: '1', Judul: 'Bimbingan Tesis', Deskripsi: 'Catat bimbingan, jadwal, dan tahapan tesis', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Akademik', Ikon: '🎓', Urutan: '1', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '2', Judul: 'Pengajuan Outline Tesis', Deskripsi: 'Ajukan dan pantau outline tesis', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Akademik', Ikon: '📝', Urutan: '2', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '3', Judul: 'Materi & Video Matrikulasi', Deskripsi: 'Unduh materi dan tonton video dosen', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Pembelajaran', Ikon: '🎬', Urutan: '3', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '4', Judul: 'EDOM Dosen Magister', Deskripsi: 'Hasil evaluasi dosen oleh mahasiswa', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Mutu', Ikon: '📊', Urutan: '4', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '5', Judul: 'Surat Pengambilan Data', Deskripsi: 'Pengelolaan surat pengambilan data penelitian', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Administrasi', Ikon: '✉️', Urutan: '5', Aktif: 'Ya', Untuk: 'Semua' },
+      { ID: '6', Judul: 'Portal Akademik FIKPsi', Deskripsi: 'Layanan akademik fakultas', URL: 'https://fikpsi.unmuhpnk.ac.id', Kategori: 'Administrasi', Ikon: '🏛️', Urutan: '6', Aktif: 'Ya', Untuk: 'Semua' }
+    ],
+    info: [],
+    ing: [],
+    dibaca: []
+  }
+};
+
+/* API caller dengan fallback cerdas */
+const call = (action, p) => new Promise(resolve => {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(err => resolve({ ok: false, error: err.message }))
+      .api(action, A, p || {});
+  } else {
+    /* Mode offline / browser mandiri */
+    setTimeout(() => {
+      const role = A.role || 'Mahasiswa';
+      const mock = JSON.parse(JSON.stringify(MOCK_DATA[role] || MOCK_DATA.Mahasiswa));
+      if (action === 'home') {
+        resolve({ ok: true, data: mock });
+      } else if (action === 'addInfo') {
+        resolve({ ok: true, data: 'OK' });
+      } else if (action === 'addIng') {
+        resolve({ ok: true, data: 'OK' });
+      } else if (action === 'saveMenu') {
+        resolve({ ok: true, data: 'OK' });
+      } else if (action === 'hapus') {
+        resolve({ ok: true, data: 'OK' });
+      } else {
+        resolve({ ok: true, data: null });
+      }
+    }, 250);
+  }
+});
+
+function toast(m, bad) {
+  const t = $('#toast');
+  t.textContent = m;
+  t.className = bad ? 'bad show' : 'show';
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.className = '', 3500);
+}
+
+const FAV = () => {
+  try { return JSON.parse(localStorage.fav || '[]'); } catch (e) { return []; }
+};
+function fav(id) {
+  let f = FAV();
+  f = f.includes(id) ? f.filter(x => x != id) : f.concat(id);
+  try { localStorage.fav = JSON.stringify(f); } catch (e) {}
+  draw();
+}
+
+/* Inisialisasi Logo */
+function logo() {
+  if (LOGO) {
+    document.querySelectorAll('.lg').forEach(e => {
+      e.style.backgroundImage = 'url("' + LOGO + '")';
+      e.classList.add('has');
+    });
+  }
+}
+logo();
+
+/* Masuk langsung berdasarkan peran (Tanpa kolom login email/PIN) */
+async function masukSebagai(peran) {
+  const st = $('#landing-status');
+  st.textContent = `Menyiapkan akses sebagai ${peran}…`;
+  
+  A = { role: peran };
+  
+  const r = await call('home');
+  st.textContent = '';
+  
+  if (!r.ok) {
+    A = {};
+    return toast(r.error || 'Gagal memuat portal. Silakan coba lagi.', 1);
+  }
+
+  D = r.data;
+  U = D.user;
+  LAST = unread();
+
+  try { localStorage.lastRole = peran; } catch (e) {}
+
+  $('#login').classList.add('hide');
+  $('#app').classList.remove('hide');
+  
+  TAB = 'h';
+  draw();
+  
+  clearInterval(PT);
+  PT = setInterval(poll, 120000);
+  
+  toast(`Selamat datang di Portal MKM, ${U.Nama}!`);
+}
+
+function keluar() {
+  clearInterval(PT);
+  A = {};
+  U = null;
+  D = null;
+  TAB = 'h';
+  CAT = 'Semua';
+  Q = '';
+  LAST = 0;
+  
+  $('#app').classList.add('hide');
+  $('#main').innerHTML = '';
+  $('#nav').innerHTML = '';
+  
+  const l = $('#login');
+  l.classList.remove('hide');
+  window.scrollTo(0, 0);
+  
+  toast('Anda telah kembali ke halaman pilihan akses');
+}
+
+async function poll() {
+  const r = await call('home');
+  if (!r.ok) return;
+  D = r.data;
+  const n = unread();
+  if (n > LAST) toast('Ada ' + (n - LAST) + ' notifikasi baru');
+  LAST = n;
+  nav();
+}
+
+async function reload() {
+  const r = await call('home');
+  if (r.ok) {
+    D = r.data;
+    LAST = unread();
+    draw();
+  }
+}
+
+async function act(a, p, ok) {
+  const r = await call(a, p);
+  if (!r.ok) return toast(r.error, 1);
+  toast(ok || 'Tersimpan');
+  reload();
+}
+
+const del = (tipe, id) => confirm('Hapus data ini?') && act('hapus', { tipe, id }, 'Terhapus');
+const go = k => { TAB = k; draw(); window.scrollTo(0, 0); };
+const TT = { h: 'Beranda', m: 'Direktori Menu', p: 'Pengumuman', r: 'Pengingat', k: 'Kelola Menu' };
+
+/* Navigasi Sidebar */
+function nav() {
+  const roleIcon = U.Peran == 'Mahasiswa' ? '🎓' : (U.Peran == 'Dosen' ? '👨‍🏫' : '⚙️');
+  const T = [
+    ['h', '🏠'],
+    ['m', '🧭'],
+    ['p', '📢', nI()],
+    ['r', '⏰', nR()]
+  ].concat(U.Peran == 'Admin' ? [['k', '⚙️']] : []);
+
+  $('#nav').innerHTML = `
+    <div class="lh">
+      <div class="lg" aria-hidden="true">UM</div>
+      <div class="brand-text">
+        <b>Portal MKM</b>
+        <small>UM Pontianak</small>
+      </div>
+    </div>
+
+    <!-- Profil Pengguna Aktif -->
+    <div class="user-badge-card">
+      <div class="user-avatar">${roleIcon}</div>
+      <div class="user-info">
+        <span class="u-name" title="${esc(U.Nama)}">${esc(U.Nama)}</span>
+        <span class="u-role">${esc(U.Peran)}</span>
+      </div>
+    </div>
+
+    <!-- Menu Navigasi -->
+    <div class="nav-group">
+      ${T.map(([k, i, n]) => `
+        <button class="nv ${TAB == k ? 'on' : ''}" onclick="go('${k}')">
+          <span class="i">${i}</span>
+          <span>${TT[k]}</span>
+          ${n ? `<span class="n">${n}</span>` : ''}
+        </button>
+      `).join('')}
+    </div>
+
+    <!-- Switch / Ganti Akses -->
+    <div class="side-foot">
+      <button class="switch-role-btn" onclick="keluar()">
+        <span>🔄</span> Ganti Peran Akses
+      </button>
+    </div>
+  `;
+}
+
+function draw() {
+  nav();
+  $('#pt').textContent = TT[TAB];
+  $('#dt').textContent = new Date().toLocaleDateString('id-ID', { dateStyle: 'full' });
+  
+  const roleIcon = U.Peran == 'Mahasiswa' ? '🎓' : (U.Peran == 'Dosen' ? '👨‍🏫' : '⚙️');
+  $('#top-role-indicator').innerHTML = `${roleIcon} Mode ${U.Peran}`;
+
+  logo();
+  $('#main').innerHTML = ({ h: vH, m: vM, p: vP, r: vR, k: vK }[TAB])();
+  
+  if (TAB == 'p' || TAB == 'r') {
+    const ids = (TAB == 'p' ? D.info : D.ing).filter(isNew).map(x => x.ID);
+    if (ids.length) {
+      D.dibaca = D.dibaca.concat(ids);
+      LAST = unread();
+      call('read', { ids });
+      setTimeout(nav, 0);
+    }
+  }
+}
+
+/* Card Menu yang Rapi & User-friendly */
+function mcard(x) {
+  const f = FAV().includes(x.ID);
+  const iconEmoji = esc(x.Ikon || '📌');
+  const cat = esc(x.Kategori || 'Lainnya');
+  const title = esc(x.Judul);
+  const desc = esc(x.Deskripsi || 'Tidak ada deskripsi layanan.');
+
+  return `
+    <div class="mc ${x.URL ? '' : 'off'}">
+      <div class="mc-inner">
+        <div class="mc-head">
+          <div class="ic-box">${iconEmoji}</div>
+          <button class="s ${f ? 'on' : ''}" onclick="fav('${x.ID}')" aria-label="${f ? 'Lepas sematan' : 'Sematkan menu'}" title="${f ? 'Lepas sematan' : 'Sematkan ke Beranda'}">${f ? '★' : '☆'}</button>
+        </div>
+        <b>${title}</b>
+        <div class="desc">${desc}</div>
+        <div class="mc-foot">
+          <span class="tg">${cat}</span>
+          ${x.URL ? `
+            <a href="${url(x.URL)}" target="_blank" rel="noopener" class="go-btn">
+              Buka Layanan ↗
+            </a>
+          ` : `
+            <span class="m" style="font-size:12px">Tautan belum ada</span>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+const live = () => D.menu.filter(x => x.Aktif != 'Tidak');
+
+/* ========================================================
+   VIEW: BERANDA (HOME)
+======================================================== */
+function vH() {
+  const now = Date.now();
+  const up = D.ing.filter(r => { const t = +new Date(r.Waktu); return t > now - 36e5; }).slice(0, 5);
+  const f = FAV();
+  const M = live();
+  const pin = M.filter(x => f.includes(x.ID));
+  const show = (pin.length ? pin : M.slice(0, 6));
+
+  const h = new Date().getHours();
+  const sal = h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
+
+  return `
+    <!-- Hero Banner -->
+    <div class="hero2">
+      <h2>${sal}, ${esc(U.Nama)}!</h2>
+      <p>
+        ${U.Peran == 'Mahasiswa'
+          ? 'Selamat datang di Portal MKM. Akses materi, bimbingan tesis, agenda, dan pengumuman program studi dengan mudah.'
+          : U.Peran == 'Dosen'
+            ? 'Portal Dosen MKM siap membantu koordinasi bimbingan tesis, publikasi pengumuman prodi, dan agenda perkuliahan.'
+            : 'Kelola menu layanan, publikasikan pengumuman penting, dan atur jadwal agenda prodi.'
+        }
+      </p>
+      <div class="hero-actions">
+        <button class="btn g" onclick="go('m')">🧭 Jelajahi Semua Menu</button>
+        ${U.Peran != 'Mahasiswa' ? `<button class="btn o" onclick="go('p')">📢 Buat Pengumuman</button>` : ''}
+        <button class="btn o" onclick="go('r')">⏰ Buat Pengingat</button>
+      </div>
+    </div>
+
+    <!-- Statistik Interaktif -->
+    <div class="stats">
+      <div class="st2" onclick="go('m')">
+        <div class="i-box">🧭</div>
+        <div>
+          <span class="st-val">${M.length}</span>
+          <span class="st-lbl">Menu Tersedia</span>
+        </div>
+      </div>
+      <div class="st2" onclick="go('p')">
+        <div class="i-box" style="background:#FFF3D6;color:#B27B00">📢</div>
+        <div>
+          <span class="st-val">${nI()}</span>
+          <span class="st-lbl">Pengumuman Baru</span>
+        </div>
+      </div>
+      <div class="st2" onclick="go('r')">
+        <div class="i-box" style="background:#E8F7EE;color:#0E9549">⏰</div>
+        <div>
+          <span class="st-val">${up.length}</span>
+          <span class="st-lbl">Agenda Mendatang</span>
+        </div>
+      </div>
+      <div class="st2" onclick="go('m')">
+        <div class="i-box" style="background:#FEE4E2;color:#D92D20">⭐</div>
+        <div>
+          <span class="st-val">${pin.length}</span>
+          <span class="st-lbl">Menu Tersemat</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dua Kolom Konten -->
+    <div class="two">
+      <!-- Kolom Kiri: Menu Akses Cepat -->
+      <div>
+        <div class="row" style="margin-bottom:14px">
+          <div>
+            <h3>${pin.length ? '⭐ Menu Tersemat (Favorit)' : '⚡ Layanan Cepat'}</h3>
+            <span class="m" style="font-size:13px">${pin.length ? 'Akses mudah ke menu yang telah Anda sematkan' : 'Pilihan layanan utama akademik MKM'}</span>
+          </div>
+          <button class="btn o" onclick="go('m')">Lihat Semua (${M.length})</button>
+        </div>
+        
+        <div class="grid">
+          ${show.map(mcard).join('') || '<div class="card m">Belum ada menu yang aktif saat ini.</div>'}
+        </div>
+      </div>
+
+      <!-- Kolom Kanan: Agenda & Pengumuman -->
+      <div>
+        <!-- Agenda Mendatang -->
+        <div class="card">
+          <div class="row" style="margin-bottom:12px">
+            <h3>⏰ Agenda & Jadwal</h3>
+            <button class="btn o" style="padding:4px 10px;font-size:12.5px" onclick="go('r')">Kelola</button>
+          </div>
+          ${up.length ? up.map(r => {
+            const d = new Date(r.Waktu);
+            return `
+              <div class="ag">
+                <div class="d">
+                  ${d.getDate()}
+                  <small>${d.toLocaleDateString('id-ID', { month: 'short' })}</small>
+                </div>
+                <div>
+                  <b style="font-size:14px;color:var(--bd)">${esc(r.Judul)}</b>
+                  <br>
+                  <small class="m">${fmt(r.Waktu)} · <strong style="color:var(--b)">${left(r.Waktu)}</strong></small>
+                </div>
+              </div>
+            `;
+          }).join('') : '<p class="m" style="font-size:13.5px;margin:8px 0">Tidak ada agenda dalam waktu dekat.</p>'}
+        </div>
+
+        <!-- Pengumuman Terbaru -->
+        <div class="card">
+          <div class="row" style="margin-bottom:12px">
+            <h3>📢 Pengumuman Terbaru</h3>
+            <button class="btn o" style="padding:4px 10px;font-size:12.5px" onclick="go('p')">Semua</button>
+          </div>
+          ${D.info.slice(0, 3).map(x => `
+            <div class="cmt">
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px">
+                <b style="color:var(--bd);font-size:14px">${esc(x.Judul)}</b>
+                ${x.Penting == 'Ya' ? '<span class="bd rv">Penting</span>' : ''}
+              </div>
+              <small class="m">${fmt(x.Dibuat)} · Oleh ${esc(x.PembuatNama)}</small>
+              <div class="pre" style="font-size:13px;color:#334155">${esc(x.Isi.slice(0, 110))}${x.Isi.length > 110 ? '…' : ''}</div>
+            </div>
+          `).join('') || '<p class="m" style="font-size:13.5px;margin:8px 0">Belum ada pengumuman terbaru.</p>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ========================================================
+   VIEW: DIREKTORI MENU (SEMUA MENU)
+======================================================== */
+function menuGrid() {
+  const q = Q.toLowerCase();
+  const l = live().filter(x => 
+    (CAT == 'Semua' || (x.Kategori || 'Lainnya') == CAT) &&
+    (x.Judul + (x.Deskripsi || '') + (x.Kategori || '')).toLowerCase().includes(q)
+  );
+
+  return l.length
+    ? `<div class="grid">${l.map(mcard).join('')}</div>`
+    : `<div class="card m" style="text-align:center;padding:40px 20px">
+        <div style="font-size:36px;margin-bottom:10px">🔍</div>
+        <b>Tidak ada menu yang sesuai</b>
+        <p style="margin:4px 0 0;font-size:13.5px">Coba gunakan kata kunci lain atau pilih kategori "Semua".</p>
+      </div>`;
+}
+
+function vM() {
+  const cats = ['Semua'].concat([...new Set(live().map(x => x.Kategori || 'Lainnya'))]);
+
+  return `
+    <div class="menu-toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input id="q" value="${esc(Q)}" placeholder="Cari layanan atau menu…" aria-label="Cari menu" oninput="Q=this.value;$('#grid').innerHTML=menuGrid()">
+      </div>
+
+      <div class="chips">
+        ${cats.map(c => `
+          <button class="chip ${CAT == c ? 'on' : ''}" onclick="CAT='${esc(c).replace(/'/g, '')}';draw()">
+            ${esc(c)}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div id="grid">${menuGrid()}</div>
+  `;
+}
+
+/* ========================================================
+   VIEW: PENGUMUMAN
+======================================================== */
+function vP() {
+  const canPost = ['Admin', 'Dosen'].includes(U.Peran);
+  return `
+    ${canPost ? `
+      <div class="card">
+        <h3>📢 Buat Pengumuman Baru</h3>
+        <p class="m" style="font-size:13.5px;margin:0 0 14px">Publikasikan informasi akademik resmi kepada mahasiswa atau seluruh civitas MKM.</p>
+        
+        <label for="pj">Judul Pengumuman</label>
+        <input id="pj" placeholder="Contoh: Jadwal Ujian Seminar Proposal">
+
+        <label for="pi">Isi Pengumuman</label>
+        <textarea id="pi" rows="4" placeholder="Tuliskan detail pengumuman secara lengkap…"></textarea>
+
+        <label for="pg">Ditujukan Kepada</label>
+        <select id="pg">
+          <option value="Semua">Semua Pengguna</option>
+          <option value="Mahasiswa" selected>Hanya Mahasiswa</option>
+          <option value="Dosen">Hanya Dosen</option>
+        </select>
+
+        <div style="display:flex;gap:20px;flex-wrap:wrap;margin:16px 0">
+          <label style="margin:0;display:inline-flex;align-items:center;font-weight:600">
+            <input type="checkbox" id="pp"> Tandai sebagai Penting
+          </label>
+          <label style="margin:0;display:inline-flex;align-items:center;font-weight:600">
+            <input type="checkbox" id="pe"> Kirim juga notifikasi ke email
+          </label>
+        </div>
+
+        <button class="btn" onclick="act('addInfo',{judul:$('#pj').value,isi:$('#pi').value,target:$('#pg').value,penting:$('#pp').checked,email:$('#pe').checked},'Pengumuman berhasil diterbitkan')">
+          🚀 Terbitkan Pengumuman
+        </button>
+      </div>
+    ` : ''}
+
+    <div style="margin-top:20px">
+      ${D.info.length ? D.info.map(x => `
+        <div class="card ${isNew(x) ? 'new' : ''}">
+          <div class="row" style="margin-bottom:8px">
+            <b style="font-size:17px;color:var(--bd)">${esc(x.Judul)}</b>
+            <div>
+              ${x.Penting == 'Ya' ? '<span class="bd rv">Penting</span> ' : ''}
+              ${isNew(x) ? '<span class="bd wt">Baru</span>' : ''}
+            </div>
+          </div>
+          <div class="m" style="font-size:13px;margin-bottom:12px">
+            Oleh <strong>${esc(x.PembuatNama)}</strong> (${esc(x.Peran)}) · ${fmt(x.Dibuat)} · Untuk: <strong>${tgl(x.Target)}</strong>
+          </div>
+          <div class="pre">${esc(x.Isi)}</div>
+          ${own(x) ? `<div style="margin-top:14px"><button class="btn o danger" onclick="del('Pengumuman','${x.ID}')">🗑️ Hapus Pengumuman</button></div>` : ''}
+        </div>
+      `).join('') : '<div class="card m" style="text-align:center;padding:30px">Belum ada pengumuman yang diterbitkan.</div>'}
+    </div>
+  `;
+}
+
+/* ========================================================
+   VIEW: PENGINGAT (AGENDA)
+======================================================== */
+function vR() {
+  const c = U.Peran != 'Mahasiswa';
+  return `
+    <div class="card">
+      <h3>⏰ Buat Pengingat / Agenda Baru</h3>
+      <p class="m" style="font-size:13.5px;margin:0 0 14px">Catat jadwal penting agar tidak terlewatkan dan tampil di kalender kegiatan.</p>
+
+      <label for="rj">Judul Agenda / Pengingat</label>
+      <input id="rj" placeholder="Contoh: Batas Akhir Penyerahan Draf Tesis">
+
+      <label for="rw">Tanggal dan Jam</label>
+      <input type="datetime-local" id="rw">
+
+      <label for="ri">Keterangan Tambahan</label>
+      <textarea id="ri" rows="3" placeholder="Informasi lokasi, tautan zoom, atau catatan…"></textarea>
+
+      <label for="rt">Ditujukan Kepada</label>
+      <select id="rt">
+        <option value="Saya">Hanya Saya (Pribadi)</option>
+        ${c ? '<option value="Semua">Semua Pengguna</option><option value="Mahasiswa">Semua Mahasiswa</option><option value="Dosen">Semua Dosen</option>' : ''}
+      </select>
+
+      <div style="margin-top:16px">
+        <button class="btn" onclick="act('addIng',{judul:$('#rj').value,waktu:$('#rw').value,isi:$('#ri').value,target:$('#rt').value},'Pengingat berhasil disimpan')">
+          💾 Simpan Pengingat
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      ${D.ing.length ? D.ing.map(x => {
+        const past = new Date(x.Waktu) < Date.now();
+        return `
+          <div class="card ${isNew(x) ? 'new' : ''}">
+            <div class="row" style="margin-bottom:8px">
+              <b style="font-size:17px;color:var(--bd)">${esc(x.Judul)}</b>
+              <span class="bd ${past ? '' : 'wt'}">${fmt(x.Waktu)} · ${left(x.Waktu)}</span>
+            </div>
+            <div class="m" style="font-size:13px;margin-bottom:10px">
+              Dibuat oleh <strong>${esc(x.PembuatNama)}</strong> (${esc(x.Peran)}) · Target: <strong>${tgl(x.Target)}</strong>
+            </div>
+            ${x.Isi ? `<div class="pre">${esc(x.Isi)}</div>` : ''}
+            ${own(x) ? `<div style="margin-top:14px"><button class="btn o danger" onclick="del('Pengingat','${x.ID}')">🗑️ Hapus Agenda</button></div>` : ''}
+          </div>
+        `;
+      }).join('') : '<div class="card m" style="text-align:center;padding:30px">Belum ada pengingat atau agenda yang tercatat.</div>'}
+    </div>
+  `;
+}
+
+/* ========================================================
+   VIEW: KELOLA MENU (ADMINISTRATOR)
+======================================================== */
+function vK() {
+  const op = (v, l) => `<option value="${v}">${l || v}</option>`;
+  return `
+    <div class="card">
+      <h3 id="kt">⚙️ Tambah Menu Baru</h3>
+      <input type="hidden" id="mi">
+
+      <label for="mj">Judul Menu</label>
+      <input id="mj" placeholder="Contoh: Bimbingan Tesis">
+
+      <label for="md">Deskripsi Singkat</label>
+      <input id="md" placeholder="Penjelasan fungsi menu ini">
+
+      <label for="mu">Tautan URL (https://…)</label>
+      <input id="mu" type="url" placeholder="https://…">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          <label for="mk">Kategori</label>
+          <input id="mk" placeholder="Akademik">
+        </div>
+        <div>
+          <label for="mc">Ikon (Emoji)</label>
+          <input id="mc" placeholder="🎓">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+        <div>
+          <label for="mo">Urutan</label>
+          <input id="mo" type="number" value="99">
+        </div>
+        <div>
+          <label for="mf">Ditampilkan Untuk</label>
+          <select id="mf">${op('Semua')}${op('Mahasiswa')}${op('Dosen')}</select>
+        </div>
+        <div>
+          <label for="ma">Status</label>
+          <select id="ma">${op('Ya', 'Aktif')}${op('Tidak', 'Disembunyikan')}</select>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <button class="btn" onclick="saveM()">💾 Simpan Menu</button>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <h3>Daftar Menu Terdaftar (${D.menu.length})</h3>
+      ${D.menu.map(x => `
+        <div class="card">
+          <div class="row" style="margin-bottom:8px">
+            <b style="font-size:16px">${esc(x.Ikon)} ${esc(x.Judul)}</b>
+            <span class="bd ${x.Aktif == 'Tidak' ? 'rv' : 'ok'}">${x.Aktif == 'Tidak' ? 'Disembunyikan' : 'Aktif'}</span>
+          </div>
+          <div class="m" style="font-size:13px;margin-bottom:12px">
+            Kategori: <strong>${esc(x.Kategori)}</strong> · Akses: <strong>${esc(x.Untuk)}</strong> · Tautan: <em>${x.URL ? esc(x.URL) : 'belum diatur'}</em>
+          </div>
+          <button class="btn o" onclick="editM('${x.ID}')">✏️ Ubah</button>
+          <button class="btn o danger" onclick="del('Menu','${x.ID}')">🗑️ Hapus</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+const saveM = () => act('saveMenu', {
+  id: $('#mi').value,
+  judul: $('#mj').value,
+  deskripsi: $('#md').value,
+  url: $('#mu').value,
+  kategori: $('#mk').value,
+  ikon: $('#mc').value,
+  urutan: $('#mo').value,
+  untuk: $('#mf').value,
+  aktif: $('#ma').value
+}, 'Menu berhasil disimpan');
+
+function editM(id) {
+  const x = D.menu.find(m => m.ID == id);
+  if (!x) return;
+  [['mi', 'ID'], ['mj', 'Judul'], ['md', 'Deskripsi'], ['mu', 'URL'], ['mk', 'Kategori'], ['mc', 'Ikon'], ['mo', 'Urutan'], ['mf', 'Untuk'], ['ma', 'Aktif']].forEach(([k, f]) => $('#' + k).value = x[f]);
+  $('#kt').textContent = '✏️ Ubah Menu';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>

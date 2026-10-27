@@ -7,6 +7,9 @@ import {
   ApplicantRecord,
   SiteSettings,
   FaqItem,
+  PortalMenuItem,
+  AnnouncementItem,
+  ReminderItem,
   DEFAULT_SITE_SETTINGS,
   DEFAULT_PEMINATAN_DATA,
   DEFAULT_CURRICULUM_DATA,
@@ -14,6 +17,9 @@ import {
   DEFAULT_ACADEMIC_LINKS,
   DEFAULT_INITIAL_APPLICANTS,
   DEFAULT_FAQS_DATA,
+  DEFAULT_PORTAL_MENUS,
+  DEFAULT_ANNOUNCEMENTS,
+  DEFAULT_REMINDERS,
 } from '../data/mkmData';
 import {
   getStoredSupabaseConfig,
@@ -64,9 +70,25 @@ interface AppContextType {
   addApplicant: (applicant: Omit<ApplicantRecord, 'id' | 'registrationNumber' | 'registeredAt'>) => string;
   updateApplicantStatus: (id: string, status: ApplicantRecord['status']) => void;
 
+  // Adaptasi Fitur Utama Portal MKM Apps Script
+  portalMenus: PortalMenuItem[];
+  savePortalMenu: (menu: PortalMenuItem) => void;
+  deletePortalMenu: (id: string) => void;
+
+  announcements: AnnouncementItem[];
+  addAnnouncement: (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => void;
+  deleteAnnouncement: (id: string) => void;
+
+  reminders: ReminderItem[];
+  addReminder: (reminder: Omit<ReminderItem, 'id'>) => void;
+  deleteReminder: (id: string) => void;
+
+  favoriteMenuIds: string[];
+  toggleFavoriteMenu: (id: string) => void;
+
   // Active view management
-  activePortalView: 'landing' | 'admin' | 'dosen' | 'mahasiswa';
-  setActivePortalView: (view: 'landing' | 'admin' | 'dosen' | 'mahasiswa') => void;
+  activePortalView: 'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi';
+  setActivePortalView: (view: 'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi') => void;
 
   // Reset to factory defaults
   resetAllDataToDefault: () => void;
@@ -88,7 +110,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  const [activePortalView, setActivePortalView] = useState<'landing' | 'admin' | 'dosen' | 'mahasiswa'>('landing');
+  const [activePortalView, setActivePortalView] = useState<'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi'>('landing');
 
   // CMS state
   const [settings, setSettings] = useState<SiteSettings>(() => {
@@ -151,6 +173,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return saved ? JSON.parse(saved) : DEFAULT_INITIAL_APPLICANTS;
     } catch {
       return DEFAULT_INITIAL_APPLICANTS;
+    }
+  });
+
+  // Adaptasi Menu Layanan Inti dari Apps Script (MENU_AWAL)
+  const [portalMenus, setPortalMenus] = useState<PortalMenuItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_portal_menus`);
+      return saved ? JSON.parse(saved) : DEFAULT_PORTAL_MENUS;
+    } catch {
+      return DEFAULT_PORTAL_MENUS;
+    }
+  });
+
+  // Pengumuman Prodi
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_announcements`);
+      return saved ? JSON.parse(saved) : DEFAULT_ANNOUNCEMENTS;
+    } catch {
+      return DEFAULT_ANNOUNCEMENTS;
+    }
+  });
+
+  // Pengingat / Agenda Deadline
+  const [reminders, setReminders] = useState<ReminderItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_reminders`);
+      return saved ? JSON.parse(saved) : DEFAULT_REMINDERS;
+    } catch {
+      return DEFAULT_REMINDERS;
+    }
+  });
+
+  // Menu Tersemat (Favorit Pin)
+  const [favoriteMenuIds, setFavoriteMenuIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_fav_menus`);
+      return saved ? JSON.parse(saved) : ['menu-1', 'menu-2', 'menu-3'];
+    } catch {
+      return ['menu-1', 'menu-2', 'menu-3'];
     }
   });
 
@@ -228,6 +290,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error(e);
     }
   }, [applicants]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_portal_menus`, JSON.stringify(portalMenus));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [portalMenus]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_announcements`, JSON.stringify(announcements));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [announcements]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_reminders`, JSON.stringify(reminders));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [reminders]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_fav_menus`, JSON.stringify(favoriteMenuIds));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [favoriteMenuIds]);
 
   const login = (role: 'admin' | 'dosen' | 'mahasiswa', identifier: string, name?: string) => {
     let userObj: CurrentUser;
@@ -344,6 +438,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const toggleFavoriteMenu = (id: string) => {
+    setFavoriteMenuIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const savePortalMenu = (menu: PortalMenuItem) => {
+    setPortalMenus((prev) => {
+      const idx = prev.findIndex((m) => m.id === menu.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = menu;
+        return updated;
+      }
+      return [...prev, menu];
+    });
+  };
+
+  const deletePortalMenu = (id: string) => {
+    setPortalMenus((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const addAnnouncement = (item: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
+    const newAnn: AnnouncementItem = {
+      ...item,
+      id: `inf-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setAnnouncements((prev) => [newAnn, ...prev]);
+  };
+
+  const deleteAnnouncement = (id: string) => {
+    setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const addReminder = (item: Omit<ReminderItem, 'id'>) => {
+    const newRem: ReminderItem = {
+      ...item,
+      id: `ing-${Date.now()}`,
+    };
+    setReminders((prev) => [newRem, ...prev]);
+  };
+
+  const deleteReminder = (id: string) => {
+    setReminders((prev) => prev.filter((r) => r.id !== id));
+  };
+
   const resetAllDataToDefault = () => {
     setSettings(DEFAULT_SITE_SETTINGS);
     setPeminatans(DEFAULT_PEMINATAN_DATA);
@@ -352,6 +493,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAcademicLinks(DEFAULT_ACADEMIC_LINKS);
     setFaqs(DEFAULT_FAQS_DATA);
     setApplicants(DEFAULT_INITIAL_APPLICANTS);
+    setPortalMenus(DEFAULT_PORTAL_MENUS);
+    setAnnouncements(DEFAULT_ANNOUNCEMENTS);
+    setReminders(DEFAULT_REMINDERS);
+    setFavoriteMenuIds(['menu-1', 'menu-2', 'menu-3']);
     localStorage.removeItem(`${STORAGE_KEY}_settings`);
     localStorage.removeItem(`${STORAGE_KEY}_peminatans`);
     localStorage.removeItem(`${STORAGE_KEY}_curriculum`);
@@ -359,6 +504,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(`${STORAGE_KEY}_academic_links`);
     localStorage.removeItem(`${STORAGE_KEY}_faqs`);
     localStorage.removeItem(`${STORAGE_KEY}_applicants`);
+    localStorage.removeItem(`${STORAGE_KEY}_portal_menus`);
+    localStorage.removeItem(`${STORAGE_KEY}_announcements`);
+    localStorage.removeItem(`${STORAGE_KEY}_reminders`);
+    localStorage.removeItem(`${STORAGE_KEY}_fav_menus`);
   };
 
   return (
@@ -389,6 +538,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activePortalView,
         setActivePortalView,
         resetAllDataToDefault,
+        portalMenus,
+        savePortalMenu,
+        deletePortalMenu,
+        announcements,
+        addAnnouncement,
+        deleteAnnouncement,
+        reminders,
+        addReminder,
+        deleteReminder,
+        favoriteMenuIds,
+        toggleFavoriteMenu,
       }}
     >
       {children}

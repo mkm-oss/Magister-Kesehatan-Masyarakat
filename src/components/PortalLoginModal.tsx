@@ -41,25 +41,35 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
   const handleCustomLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      setErrorMsg('Mohon masukkan Username / NIDN / NIM.');
+      setErrorMsg('Mohon masukkan Email / NIDN / NIM.');
       return;
     }
     if (!password.trim()) {
-      setErrorMsg('Mohon masukkan Password.');
+      setErrorMsg('Mohon masukkan PIN / Password (PIN default: 1234).');
       return;
     }
 
-    login(selectedRole, username, customName || undefined);
+    // Match exact users from Apps Script database
+    const u = username.trim().toLowerCase();
+    if (u === 'admin@contoh.ac.id' || u === 'admin' || u === 'admin.mkm') {
+      login('admin', u, 'Admin Prodi MKM');
+    } else if (u === 'dosen@contoh.ac.id' || u === '0000000001' || u === '1102047801') {
+      login('dosen', u, customName || 'Dr. Dosen Contoh, M.Kes');
+    } else if (u === 'mahasiswa@contoh.ac.id' || u === '2400000001' || u === '241021004') {
+      login('mahasiswa', u, customName || 'Mahasiswa Contoh');
+    } else {
+      login(selectedRole, username, customName || undefined);
+    }
     onClose();
   };
 
   const handleQuickDemoLogin = (role: 'admin' | 'dosen' | 'mahasiswa') => {
     if (role === 'admin') {
-      login('admin', 'admin.mkm', 'Administrator Pascasarjana MKM');
+      login('admin', 'admin@contoh.ac.id', 'Admin Prodi MKM');
     } else if (role === 'dosen') {
-      login('dosen', 'NIDN: 1102047801', 'Dr. Rochmawati, S.KM., M.Kes.');
+      login('dosen', 'dosen@contoh.ac.id', 'Dr. Rochmawati, S.KM., M.Kes.');
     } else {
-      login('mahasiswa', 'NIM: 241021004', 'Ahmad Fauzi, S.KM.');
+      login('mahasiswa', 'mahasiswa@contoh.ac.id', 'Ahmad Fauzi, S.KM.');
     }
     onClose();
   };
@@ -184,6 +194,51 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
             </span>
           </div>
 
+          {/* Quick Preset Accounts from Apps Script Data */}
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+              Pilihan Akun Terdaftar (Data Asli Code.gs · PIN: 1234):
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRole('admin');
+                  setUsername('admin@contoh.ac.id');
+                  setPassword('1234');
+                  setCustomName('Admin Prodi MKM');
+                }}
+                className="px-2 py-1 text-[11px] font-bold rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors"
+              >
+                ⚙️ admin@contoh.ac.id
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRole('dosen');
+                  setUsername('dosen@contoh.ac.id');
+                  setPassword('1234');
+                  setCustomName('Dr. Dosen Contoh, M.Kes');
+                }}
+                className="px-2 py-1 text-[11px] font-bold rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
+              >
+                👨‍🏫 dosen@contoh.ac.id
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRole('mahasiswa');
+                  setUsername('mahasiswa@contoh.ac.id');
+                  setPassword('1234');
+                  setCustomName('Mahasiswa Contoh');
+                }}
+                className="px-2 py-1 text-[11px] font-bold rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+              >
+                🎓 mahasiswa@contoh.ac.id
+              </button>
+            </div>
+          </div>
+
           <div className="relative flex py-1 items-center">
             <div className="flex-grow border-t border-slate-200"></div>
             <span className="flex-shrink mx-3 text-slate-400 text-xs uppercase">atau masuk dengan akun</span>
@@ -195,19 +250,19 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700">
                 {selectedRole === 'admin'
-                  ? 'Username Admin'
+                  ? 'Email / Username Admin'
                   : selectedRole === 'dosen'
-                  ? 'NIDN / Akun Dosen'
-                  : 'NIM / Akun Mahasiswa'}
+                  ? 'Email / NIDN Dosen'
+                  : 'Email / NIM Mahasiswa'}
               </label>
               <input
                 type="text"
                 placeholder={
                   selectedRole === 'admin'
-                    ? 'admin'
+                    ? 'admin@contoh.ac.id'
                     : selectedRole === 'dosen'
-                    ? '1102047801'
-                    : '241021004'
+                    ? 'dosen@contoh.ac.id'
+                    : 'mahasiswa@contoh.ac.id'
                 }
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}

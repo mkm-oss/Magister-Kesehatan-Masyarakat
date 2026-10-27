@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Mail, Phone, ExternalLink, Award, Globe, UserCheck } from 'lucide-react';
+import { MapPin, Mail, Phone, ExternalLink, Award, Globe, UserCheck, GraduationCap, ShieldCheck } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface FooterProps {
@@ -55,88 +55,90 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
-          {/* Quick Links (2 cols) */}
+          {/* Portal Links (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Program Akademik
+              Akses Portal Terpadu
             </h4>
-            <ul className="space-y-2 text-xs text-slate-400">
+            <ul className="space-y-2.5 text-xs text-slate-400">
               <li>
-                <a href="#profil" className="hover:text-white transition-colors">
-                  Profil & Visi
-                </a>
+                <button
+                  type="button"
+                  onClick={() => onOpenPortalLogin('mahasiswa')}
+                  className="hover:text-blue-300 font-semibold text-slate-300 transition-colors text-left flex items-center gap-1.5"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Portal Mahasiswa</span>
+                </button>
               </li>
               <li>
-                <a href="#peminatan" className="hover:text-white transition-colors">
-                  {peminatans.length} Peminatan Studi
-                </a>
+                <button
+                  type="button"
+                  onClick={() => onOpenPortalLogin('dosen')}
+                  className="hover:text-amber-300 font-semibold text-slate-300 transition-colors text-left flex items-center gap-1.5"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Portal Dosen</span>
+                </button>
               </li>
               <li>
-                <a href="#kurikulum" className="hover:text-white transition-colors">
-                  Struktur Kurikulum (38 SKS)
-                </a>
-              </li>
-              <li>
-                <a href="#biaya" className="hover:text-white transition-colors">
-                  Simulasi Biaya & SPP
-                </a>
-              </li>
-              <li>
-                <a href="#faq" className="hover:text-white transition-colors">
-                  Tanya Jawab (FAQ)
-                </a>
+                <button
+                  type="button"
+                  onClick={() => onOpenPortalLogin('admin')}
+                  className="hover:text-emerald-300 font-semibold text-slate-300 transition-colors text-left flex items-center gap-1.5"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Portal Administrator</span>
+                </button>
               </li>
             </ul>
           </div>
 
-          {/* Admission & Actions (2 cols) */}
+          {/* Academic Services (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Portal Sivitas Akademika
+              Layanan Pascasarjana
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
               <li>
-                <button
-                  onClick={() => onOpenPortalLogin('admin')}
-                  className="hover:text-amber-400 font-semibold text-amber-300 transition-colors text-left flex items-center gap-1"
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>Login Admin CMS</span>
-                </button>
-              </li>
-              <li>
                 <a
-                  href="#pelayanan-akademik"
-                  className="hover:text-amber-300 text-amber-200/90 font-semibold transition-colors text-left flex items-center gap-1"
+                  href="https://tesis.unmuhpnk.ac.id/mkm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
                 >
-                  <span>Layanan Tesis & Pembelajaran</span>
+                  Bimbingan Tesis (SIMPATI) ↗
                 </a>
               </li>
               <li>
-                <button
-                  onClick={() => onOpenPortalLogin('dosen')}
-                  className="hover:text-white transition-colors text-left flex items-center gap-1"
+                <a
+                  href="https://elearning.unmuhpnk.ac.id/course/index.php?categoryid=mkm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
                 >
-                  <span>Portal Dosen MKM</span>
-                </button>
+                  LMS Moodle Pembelajaran ↗
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => onOpenPortalLogin('mahasiswa')}
-                  className="hover:text-white transition-colors text-left flex items-center gap-1"
+                <a
+                  href="https://siakad.unmuhpnk.ac.id"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
                 >
-                  <span>Portal Mahasiswa S2</span>
-                </button>
-              </li>
-              <li className="pt-2 border-t border-slate-800">
-                <button onClick={onOpenRegister} className="hover:text-white transition-colors text-left">
-                  Pendaftaran PMB Online
-                </button>
+                  SIAKAD FIKPsi ↗
+                </a>
               </li>
               <li>
-                <button onClick={onOpenBrochure} className="hover:text-white transition-colors text-left">
-                  Unduh Brosur Pascasarjana
-                </button>
+                <a
+                  href="https://digilib.unmuhpnk.ac.id"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Perpustakaan & Repositori ↗
+                </a>
               </li>
             </ul>
           </div>

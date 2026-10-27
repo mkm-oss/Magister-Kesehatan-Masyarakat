@@ -21,8 +21,21 @@ import {
   FolderSync,
   FileSpreadsheet,
   Database,
+  Edit2,
+  Bell,
+  Clock,
+  Compass,
+  Send,
 } from 'lucide-react';
-import { Peminatan, SemesterInfo, Lecturer, AcademicLink } from '../data/mkmData';
+import {
+  Peminatan,
+  SemesterInfo,
+  Lecturer,
+  AcademicLink,
+  PortalMenuItem,
+  AnnouncementItem,
+  ReminderItem,
+} from '../data/mkmData';
 import { GoogleDriveExplorer } from './GoogleDriveExplorer';
 import { GoogleSheetsManager } from './GoogleSheetsManager';
 import { SupabaseManager } from './SupabaseManager';
@@ -49,11 +62,53 @@ export const AdminDashboard: React.FC = () => {
     applicants,
     updateApplicantStatus,
     resetAllDataToDefault,
+    portalMenus,
+    savePortalMenu,
+    deletePortalMenu,
+    announcements,
+    addAnnouncement,
+    deleteAnnouncement,
+    reminders,
+    addReminder,
+    deleteReminder,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
-    'settings' | 'peminatan' | 'curriculum' | 'fees' | 'lecturers' | 'links' | 'applicants' | 'drive' | 'sheets' | 'supabase'
+    | 'settings'
+    | 'peminatan'
+    | 'curriculum'
+    | 'fees'
+    | 'lecturers'
+    | 'links'
+    | 'portal_menu'
+    | 'announcements'
+    | 'applicants'
+    | 'drive'
+    | 'sheets'
+    | 'supabase'
   >('settings');
+
+  // Form Kelola Menu Layanan (Adaptasi dari Apps Script vK)
+  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+  const [menuTitle, setMenuTitle] = useState('');
+  const [menuDesc, setMenuDesc] = useState('');
+  const [menuUrl, setMenuUrl] = useState('');
+  const [menuCat, setMenuCat] = useState('Akademik');
+  const [menuIcon, setMenuIcon] = useState('🎓');
+  const [menuOrder, setMenuOrder] = useState(99);
+  const [menuTarget, setMenuTarget] = useState<'Semua' | 'Mahasiswa' | 'Dosen'>('Semua');
+  const [menuActive, setMenuActive] = useState(true);
+
+  // Form Pengumuman & Agenda Admin
+  const [admAnnTitle, setAdmAnnTitle] = useState('');
+  const [admAnnContent, setAdmAnnContent] = useState('');
+  const [admAnnTarget, setAdmAnnTarget] = useState<'Semua' | 'Mahasiswa' | 'Dosen'>('Semua');
+  const [admAnnImportant, setAdmAnnImportant] = useState(false);
+
+  const [admRemTitle, setAdmRemTitle] = useState('');
+  const [admRemDate, setAdmRemDate] = useState('');
+  const [admRemContent, setAdmRemContent] = useState('');
+  const [admRemTarget, setAdmRemTarget] = useState<'Semua' | 'Mahasiswa' | 'Dosen'>('Semua');
 
   const [successToast, setSuccessToast] = useState('');
 
@@ -336,6 +391,30 @@ export const AdminDashboard: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveTab('portal_menu')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'portal_menu'
+                ? 'bg-blue-900 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Compass className="w-4 h-4 text-blue-600" />
+            <span>Kelola Menu Layanan ({portalMenus.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('announcements')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'announcements'
+                ? 'bg-blue-900 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Bell className="w-4 h-4 text-amber-500" />
+            <span>Pengumuman & Agenda</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('applicants')}
             className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
               activeTab === 'applicants'
@@ -381,6 +460,15 @@ export const AdminDashboard: React.FC = () => {
           >
             <Database className="w-4 h-4 text-emerald-500" />
             <span>Database Supabase</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePortalView('sim_akreditasi')}
+            className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all flex items-center gap-2 bg-gradient-to-r from-amber-400/20 to-amber-500/20 text-[#92400E] hover:bg-amber-400/30 border border-amber-400/40 ml-auto"
+          >
+            <span>🏆</span>
+            <span>SIM-Akreditasi PRO ➔</span>
           </button>
         </div>
 
@@ -1230,6 +1318,471 @@ export const AdminDashboard: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: Kelola Menu Layanan (Adaptasi dari Apps Script vK) */}
+        {activeTab === 'portal_menu' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-blue-600" />
+                    <span>{editingMenuId ? '✏️ Ubah Menu Layanan' : '⚙️ Tambah Menu Layanan Baru'}</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Kelola modul layanan yang tampil di portal Mahasiswa dan Dosen (seperti Bimbingan Tesis, Outline, Matrikulasi, EDOM, dll).
+                  </p>
+                </div>
+                {editingMenuId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingMenuId(null);
+                      setMenuTitle('');
+                      setMenuDesc('');
+                      setMenuUrl('');
+                      setMenuCat('Akademik');
+                      setMenuIcon('🎓');
+                      setMenuOrder(99);
+                      setMenuTarget('Semua');
+                      setMenuActive(true);
+                    }}
+                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  >
+                    Batal Edit
+                  </button>
+                )}
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!menuTitle.trim()) return;
+                  savePortalMenu({
+                    id: editingMenuId || `menu-${Date.now()}`,
+                    title: menuTitle.trim(),
+                    description: menuDesc.trim(),
+                    url: menuUrl.trim(),
+                    category: menuCat.trim(),
+                    icon: menuIcon.trim() || '📌',
+                    order: Number(menuOrder) || 99,
+                    targetAudience: menuTarget,
+                    active: menuActive,
+                  });
+                  showToast('Menu layanan berhasil disimpan!');
+                  setEditingMenuId(null);
+                  setMenuTitle('');
+                  setMenuDesc('');
+                  setMenuUrl('');
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Judul Menu *</label>
+                  <input
+                    type="text"
+                    required
+                    value={menuTitle}
+                    onChange={(e) => setMenuTitle(e.target.value)}
+                    placeholder="Contoh: Bimbingan Tesis atau Pengajuan Outline"
+                    className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Deskripsi Singkat</label>
+                  <input
+                    type="text"
+                    value={menuDesc}
+                    onChange={(e) => setMenuDesc(e.target.value)}
+                    placeholder="Contoh: Catat bimbingan, jadwal, dan tahapan tesis mahasiswa"
+                    className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Tautan URL (https://…)</label>
+                  <input
+                    type="url"
+                    value={menuUrl}
+                    onChange={(e) => setMenuUrl(e.target.value)}
+                    placeholder="https://tesis.unmuhpnk.ac.id/mkm"
+                    className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Kategori</label>
+                    <input
+                      type="text"
+                      value={menuCat}
+                      onChange={(e) => setMenuCat(e.target.value)}
+                      placeholder="Akademik / Pembelajaran / Mutu / Administrasi"
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Ikon (Emoji)</label>
+                    <input
+                      type="text"
+                      value={menuIcon}
+                      onChange={(e) => setMenuIcon(e.target.value)}
+                      placeholder="🎓, 📝, 🎬, 📊, ✉️, 🏛️"
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Urutan Tampil</label>
+                    <input
+                      type="number"
+                      value={menuOrder}
+                      onChange={(e) => setMenuOrder(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Ditampilkan Untuk</label>
+                    <select
+                      value={menuTarget}
+                      onChange={(e) => setMenuTarget(e.target.value as any)}
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm bg-white"
+                    >
+                      <option value="Semua">Semua Pengguna</option>
+                      <option value="Mahasiswa">Hanya Mahasiswa</option>
+                      <option value="Dosen">Hanya Dosen</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Status Menu</label>
+                    <select
+                      value={menuActive ? 'Ya' : 'Tidak'}
+                      onChange={(e) => setMenuActive(e.target.value === 'Ya')}
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm bg-white"
+                    >
+                      <option value="Ya">Aktif (Tampil)</option>
+                      <option value="Tidak">Disembunyikan</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl transition-all shadow-sm flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{editingMenuId ? 'Simpan Perubahan Menu' : 'Simpan Menu Baru'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Daftar Menu Terdaftar */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+              <h4 className="text-sm font-bold text-slate-900">
+                Daftar Menu Layanan Terdaftar ({portalMenus.length})
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {portalMenus.map((m) => (
+                  <div
+                    key={m.id}
+                    className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col justify-between space-y-3"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-2xl p-2 rounded-lg bg-white border border-slate-200 shadow-xs">
+                            {m.icon || '📌'}
+                          </span>
+                          <div>
+                            <h5 className="font-bold text-sm text-slate-900">{m.title}</h5>
+                            <span className="text-[11px] text-slate-500 font-medium">
+                              Kategori: {m.category} · Akses: {m.targetAudience}
+                            </span>
+                          </div>
+                        </div>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            m.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                          }`}
+                        >
+                          {m.active ? 'Aktif' : 'Disembunyikan'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 line-clamp-2">{m.description}</p>
+                      <div className="text-[11px] text-blue-800 truncate font-mono mt-1">
+                        URL: {m.url || 'belum diatur'}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/80 flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingMenuId(m.id);
+                          setMenuTitle(m.title);
+                          setMenuDesc(m.description);
+                          setMenuUrl(m.url);
+                          setMenuCat(m.category);
+                          setMenuIcon(m.icon);
+                          setMenuOrder(m.order);
+                          setMenuTarget(m.targetAudience);
+                          setMenuActive(m.active);
+                          window.scrollTo({ top: 300, behavior: 'smooth' });
+                        }}
+                        className="px-3 py-1 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Ubah</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`Hapus menu "${m.title}"?`)) {
+                            deletePortalMenu(m.id);
+                            showToast('Menu berhasil dihapus');
+                          }
+                        }}
+                        className="px-3 py-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Hapus</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: Pengumuman & Agenda Prodi */}
+        {activeTab === 'announcements' && (
+          <div className="space-y-6">
+            {/* Form Publikasi Pengumuman */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Bell className="w-5 h-5 text-amber-500" />
+                <span>Terbitkan Pengumuman Resmi Prodi</span>
+              </h3>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!admAnnTitle.trim() || !admAnnContent.trim()) return;
+                  addAnnouncement({
+                    title: admAnnTitle.trim(),
+                    content: admAnnContent.trim(),
+                    target: admAnnTarget,
+                    isImportant: admAnnImportant,
+                    authorName: 'Admin Prodi MKM',
+                    authorRole: 'Admin',
+                  });
+                  setAdmAnnTitle('');
+                  setAdmAnnContent('');
+                  setAdmAnnImportant(false);
+                  showToast('Pengumuman prodi berhasil diterbitkan!');
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Judul Pengumuman *</label>
+                  <input
+                    type="text"
+                    required
+                    value={admAnnTitle}
+                    onChange={(e) => setAdmAnnTitle(e.target.value)}
+                    placeholder="Contoh: Jadwal Batas Unggah Proposal Tesis Periode Genap"
+                    className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Isi Pengumuman *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={admAnnContent}
+                    onChange={(e) => setAdmAnnContent(e.target.value)}
+                    placeholder="Tuliskan detail pengumuman prodi…"
+                    className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Ditujukan Kepada</label>
+                    <select
+                      value={admAnnTarget}
+                      onChange={(e) => setAdmAnnTarget(e.target.value as any)}
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm bg-white"
+                    >
+                      <option value="Semua">Semua Pengguna</option>
+                      <option value="Mahasiswa">Hanya Mahasiswa</option>
+                      <option value="Dosen">Hanya Dosen</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 pt-6">
+                    <input
+                      type="checkbox"
+                      id="adm-important"
+                      checked={admAnnImportant}
+                      onChange={(e) => setAdmAnnImportant(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-900"
+                    />
+                    <label htmlFor="adm-important" className="text-xs font-bold text-slate-700 cursor-pointer">
+                      Tandai sebagai Pengumuman Penting
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl transition-all shadow-sm flex items-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Terbitkan Pengumuman</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Form Agenda & Pengingat */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-emerald-600" />
+                <span>Tambah Pengingat / Agenda Prodi</span>
+              </h3>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!admRemTitle.trim() || !admRemDate) return;
+                  addReminder({
+                    title: admRemTitle.trim(),
+                    content: admRemContent.trim(),
+                    dateTime: admRemDate,
+                    target: admRemTarget,
+                    authorName: 'Admin Prodi MKM',
+                    authorRole: 'Admin',
+                  });
+                  setAdmRemTitle('');
+                  setAdmRemDate('');
+                  setAdmRemContent('');
+                  showToast('Pengingat agenda berhasil disimpan!');
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Judul Agenda *</label>
+                    <input
+                      type="text"
+                      required
+                      value={admRemTitle}
+                      onChange={(e) => setAdmRemTitle(e.target.value)}
+                      placeholder="Contoh: Rapat Evaluasi Kurikulum Semester Genap"
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Tanggal & Waktu *</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={admRemDate}
+                      onChange={(e) => setAdmRemDate(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Keterangan / Lokasi</label>
+                    <textarea
+                      rows={2}
+                      value={admRemContent}
+                      onChange={(e) => setAdmRemContent(e.target.value)}
+                      placeholder="Ruang rapat atau link Google Meet…"
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Ditujukan Kepada</label>
+                    <select
+                      value={admRemTarget}
+                      onChange={(e) => setAdmRemTarget(e.target.value as any)}
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-xs sm:text-sm bg-white"
+                    >
+                      <option value="Semua">Semua Pengguna</option>
+                      <option value="Dosen">Hanya Dosen</option>
+                      <option value="Mahasiswa">Hanya Mahasiswa</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all shadow-sm flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Simpan Agenda</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* List Pengumuman & Agenda */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+                <h4 className="text-sm font-bold text-slate-900">Daftar Pengumuman Terbit ({announcements.length})</h4>
+                <div className="space-y-3">
+                  {announcements.map((a) => (
+                    <div key={a.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900">{a.title}</span>
+                        <button
+                          type="button"
+                          onClick={() => deleteAnnouncement(a.id)}
+                          className="text-rose-500 hover:text-rose-700 p-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-600">{a.content}</p>
+                      <span className="text-[10px] text-slate-400 block">Target: {a.target}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+                <h4 className="text-sm font-bold text-slate-900">Daftar Agenda ({reminders.length})</h4>
+                <div className="space-y-3">
+                  {reminders.map((r) => (
+                    <div key={r.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900">{r.title}</span>
+                        <button
+                          type="button"
+                          onClick={() => deleteReminder(r.id)}
+                          className="text-rose-500 hover:text-rose-700 p-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <span className="text-[11px] font-bold text-emerald-700 block">
+                        📅 {new Date(r.dateTime).toLocaleString('id-ID')}
+                      </span>
+                      <p className="text-xs text-slate-600">{r.content}</p>
+                      <span className="text-[10px] text-slate-400 block">Target: {r.target}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}

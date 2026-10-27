@@ -4,6 +4,7 @@ import {
   Video,
   BookOpen,
   FileCheck,
+  FileText,
   Library,
   BookMarked,
   FileSpreadsheet,
@@ -51,11 +52,19 @@ export const AcademicServicesSection: React.FC<AcademicServicesSectionProps> = (
   // Specific thesis services
   const thesisServicesMahasiswa: ServiceItem[] = [
     {
-      title: 'Sistem Informasi Bimbingan Tesis (SIMPATI)',
-      badge: 'Portal Utama Tesis',
-      desc: 'Pengajuan usulan judul tesis, logbook konsultasi dengan pembimbing 1 & 2, dan verifikasi kelayakan naskah.',
+      title: 'Bimbingan Tesis (SIMPATI)',
+      badge: 'Layanan Utama Tesis',
+      desc: 'Catat bimbingan, jadwal konsultasi pembimbing 1 & 2, logbook riset, dan tahapan naskah tesis.',
       url: 'https://tesis.unmuhpnk.ac.id/mkm',
       icon: GraduationCap,
+      color: 'amber',
+    },
+    {
+      title: 'Pengajuan Outline Tesis',
+      badge: 'Tahap Awal Riset',
+      desc: 'Ajukan usulan topik penelitian tesis dan pantau proses verifikasi outline dari tim pengelola prodi.',
+      url: 'https://tesis.unmuhpnk.ac.id/outline',
+      icon: FileText,
       color: 'amber',
     },
     {
@@ -75,17 +84,24 @@ export const AcademicServicesSection: React.FC<AcademicServicesSectionProps> = (
       color: 'purple',
     },
     {
-      title: 'Template & Panduan Naskah Tesis MKM 2026',
-      badge: 'Pedoman Resmi',
-      desc: 'Unduh format baku proposal tesis, bab hasil & pembahasan gaya penulisan APA edisi ke-7, dan format artikel jurnal.',
-      url: '#',
+      title: 'Surat Pengambilan Data Penelitian',
+      badge: 'Administrasi Riset',
+      desc: 'Pengelolaan surat izin survei lapangan, permohonan pengambilan data dan rekomendasi ethical clearance.',
+      url: 'https://fikpsi.unmuhpnk.ac.id/layanan-surat',
       icon: Download,
       color: 'emerald',
-      isDownload: true,
     },
   ];
 
   const learningServicesMahasiswa: ServiceItem[] = [
+    {
+      title: 'Materi dan Video Matrikulasi',
+      badge: 'Materi Kuliah',
+      desc: 'Unduh bahan ajar kuliah, modul penunjang matrikulasi, dan tonton rekaman penjelasan dosen pengampu.',
+      url: 'https://elearning.unmuhpnk.ac.id/course/index.php?categoryid=mkm',
+      icon: Video,
+      color: 'blue',
+    },
     {
       title: 'Kelas Online (LMS Moodle Pascasarjana)',
       badge: 'E-Learning Terpadu',
@@ -95,9 +111,17 @@ export const AcademicServicesSection: React.FC<AcademicServicesSectionProps> = (
       color: 'blue',
     },
     {
-      title: 'SIAKAD Terpadu (KRS & Transkrip KHS)',
-      badge: 'Sistem Akademik',
-      desc: 'Pengisian rencana studi (KRS) tiap semester, jadwal kuliah ruang, rekap presensi, dan hasil studi kumulatif (KHS).',
+      title: 'EDOM Dosen Magister',
+      badge: 'Mutu Akademik',
+      desc: 'Hasil dan formulir evaluasi kinerja dosen oleh mahasiswa (EDOM) untuk penjaminan mutu program studi berkala.',
+      url: 'https://mutu.unmuhpnk.ac.id/edom-mkm',
+      icon: FileCheck,
+      color: 'indigo',
+    },
+    {
+      title: 'Portal Akademik FIKPsi (SIAKAD)',
+      badge: 'Sistem Fakultas',
+      desc: 'Pengisian rencana studi (KRS) tiap semester, jadwal kuliah, presensi kehadiran, dan transkrip nilai KHS.',
       url: 'https://siakad.unmuhpnk.ac.id',
       icon: FileSpreadsheet,
       color: 'emerald',
@@ -105,18 +129,10 @@ export const AcademicServicesSection: React.FC<AcademicServicesSectionProps> = (
     {
       title: 'Perpustakaan Digital & Repository Tesis',
       badge: 'E-Library & Jurnal',
-      desc: 'Akses repositori tesis alumni MKM, e-book kesehatan masyarakat, serta akses jurnal internasional (Scopus, ScienceDirect, ProQuest).',
+      desc: 'Akses repositori tesis alumni MKM, e-book kesehatan masyarakat, serta akses jurnal internasional terindeks.',
       url: 'https://digilib.unmuhpnk.ac.id',
       icon: Library,
       color: 'indigo',
-    },
-    {
-      title: 'Sistem Keuangan & Virtual Account SPP',
-      badge: 'Keuangan',
-      desc: 'Cek tagihan SPP semesteran, skema angsuran biaya, konfirmasi pembayaran bank, dan unduh kuitansi resmi.',
-      url: 'https://keuangan.unmuhpnk.ac.id/va-payment',
-      icon: CreditCard,
-      color: 'rose',
     },
   ];
 

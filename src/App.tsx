@@ -5,16 +5,6 @@
 
 import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { VisionAdvantage } from './components/VisionAdvantage';
-import { Concentrations } from './components/Concentrations';
-import { Curriculum } from './components/Curriculum';
-import { Faculty } from './components/Faculty';
-import { FeeCalculator } from './components/FeeCalculator';
-import { AdmissionGuide } from './components/AdmissionGuide';
-import { Testimonials } from './components/Testimonials';
-import { FaqSection } from './components/FaqSection';
 import { Footer } from './components/Footer';
 import { RegistrationModal } from './components/RegistrationFormModal';
 import { BrochureModal } from './components/BrochureModal';
@@ -24,9 +14,8 @@ import { GoogleSheetsModal } from './components/GoogleSheetsModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { DosenPortal } from './components/DosenPortal';
 import { MahasiswaPortal } from './components/MahasiswaPortal';
-import { AcademicServicesSection } from './components/AcademicServicesSection';
+import { SimAkreditasiPro } from './components/SimAkreditasiPro';
 import { InitialPortalGateway } from './components/InitialPortalGateway';
-import { ShieldCheck, UserCheck, GraduationCap, Globe, FolderSync, FileSpreadsheet } from 'lucide-react';
 
 function MainAppContent() {
   const { activePortalView, setActivePortalView, currentUser } = useApp();
@@ -53,7 +42,11 @@ function MainAppContent() {
     setIsPortalLoginOpen(true);
   };
 
-  // Route to specific portal if active
+  // Route to specific portal or SIM-Akreditasi PRO if active
+  if (activePortalView === 'sim_akreditasi') {
+    return <SimAkreditasiPro onBackToPortal={() => setActivePortalView('landing')} />;
+  }
+
   if (activePortalView === 'admin') {
     return <AdminDashboard />;
   }
@@ -66,20 +59,10 @@ function MainAppContent() {
     return <MahasiswaPortal />;
   }
 
-  // Public Landing Page
+  // Public Landing Page: Murni Hanya Portal dan Footer
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] antialiased selection:bg-blue-900 selection:text-white relative">
-      
-      {/* Top Navigation Bar */}
-      <Navbar
-        onOpenRegister={() => handleOpenRegister('')}
-        onOpenBrochure={handleOpenBrochure}
-        onOpenPortalLogin={handleOpenPortalLogin}
-        onOpenGoogleDrive={() => setIsDriveOpen(true)}
-        onOpenGoogleSheets={() => setIsSheetsOpen(true)}
-      />
-
-      {/* Main Page Sections */}
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] antialiased selection:bg-blue-900 selection:text-white relative">
+      {/* Main Page: Tampilan Awal Khusus Portal */}
       <main className="flex-1">
         {/* Tampilan Awal: Logo Institusi & Pilihan Masuk Mahasiswa, Dosen, dan Admin */}
         <InitialPortalGateway
@@ -87,47 +70,6 @@ function MainAppContent() {
           onOpenRegister={() => handleOpenRegister('')}
           onOpenBrochure={handleOpenBrochure}
         />
-
-        {/* 1. Hero Section & Informasi Program Studi */}
-        <Hero
-          onOpenRegister={() => handleOpenRegister('')}
-          onOpenBrochure={handleOpenBrochure}
-        />
-
-        {/* 2. Profil, Visi & Keunggulan Riset Lahan Basah Pesisir */}
-        <VisionAdvantage />
-
-        {/* 3. Peminatan & Spesialisasi Keahlian */}
-        <Concentrations
-          onSelectPeminatanForRegistration={(peminatanName) =>
-            handleOpenRegister(peminatanName)
-          }
-        />
-
-        {/* 4. Kurikulum & SKS Tiap Semester */}
-        <Curriculum />
-
-        {/* 4b. Menu Pelayanan Mahasiswa & Dosen: Akses Tesis & Pembelajaran Online */}
-        <AcademicServicesSection
-          onOpenPortalLogin={handleOpenPortalLogin}
-          onOpenGoogleDrive={() => setIsDriveOpen(true)}
-          onOpenGoogleSheets={() => setIsSheetsOpen(true)}
-        />
-
-        {/* 5. Tenaga Pengajar & Pembimbing Tesis */}
-        <Faculty />
-
-        {/* 6. Simulasi Biaya Studi & Skema Angsuran */}
-        <FeeCalculator onOpenConsultation={() => handleOpenRegister('')} />
-
-        {/* 7. Jadwal PMB & Panduan Pendaftaran */}
-        <AdmissionGuide onOpenRegister={() => handleOpenRegister('')} />
-
-        {/* 8. Suara Alumni & Stakeholders */}
-        <Testimonials />
-
-        {/* 9. FAQ / Tanya Jawab */}
-        <FaqSection onOpenConsultation={() => handleOpenRegister('')} />
       </main>
 
       {/* Institutional Footer */}
@@ -165,55 +107,6 @@ function MainAppContent() {
         isOpen={isSheetsOpen}
         onClose={() => setIsSheetsOpen(false)}
       />
-
-      {/* Quick Portal Switcher Floating Dock */}
-      <div className="fixed bottom-4 right-4 z-30 hidden sm:flex items-center gap-1.5 p-1.5 bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-700 text-xs">
-        <span className="text-[10px] uppercase font-bold text-slate-400 px-2 tracking-wider">
-          Akses Portal:
-        </span>
-        <button
-          onClick={() => handleOpenPortalLogin('admin')}
-          className="px-2.5 py-1.5 rounded-xl font-bold text-amber-300 hover:bg-slate-800 transition-colors flex items-center gap-1"
-          title="Login Admin CMS untuk edit web"
-        >
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Admin</span>
-        </button>
-        <button
-          onClick={() => handleOpenPortalLogin('dosen')}
-          className="px-2.5 py-1.5 rounded-xl font-bold text-blue-200 hover:bg-slate-800 transition-colors flex items-center gap-1"
-          title="Portal Dosen (Kelas Online & Tesis)"
-        >
-          <UserCheck className="w-3.5 h-3.5" />
-          <span>Dosen</span>
-        </button>
-        <button
-          onClick={() => handleOpenPortalLogin('mahasiswa')}
-          className="px-2.5 py-1.5 rounded-xl font-bold text-emerald-300 hover:bg-slate-800 transition-colors flex items-center gap-1"
-          title="Portal Mahasiswa (LMS & Tesis)"
-        >
-          <GraduationCap className="w-3.5 h-3.5" />
-          <span>Mahasiswa</span>
-        </button>
-        <div className="h-4 w-px bg-slate-700 mx-0.5" />
-        <button
-          onClick={() => setIsDriveOpen(true)}
-          className="px-2.5 py-1.5 rounded-xl font-bold text-sky-300 hover:bg-slate-800 transition-colors flex items-center gap-1"
-          title="Buka Google Drive Akademik MKM"
-        >
-          <FolderSync className="w-3.5 h-3.5 text-amber-400" />
-          <span>Drive</span>
-        </button>
-        <button
-          onClick={() => setIsSheetsOpen(true)}
-          className="px-2.5 py-1.5 rounded-xl font-bold text-emerald-300 hover:bg-slate-800 transition-colors flex items-center gap-1"
-          title="Buka Google Sheets Akademik MKM"
-        >
-          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Sheets</span>
-        </button>
-      </div>
-
     </div>
   );
 }
