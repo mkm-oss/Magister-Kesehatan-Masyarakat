@@ -26,6 +26,13 @@ import {
   Clock,
   Compass,
   Send,
+  Lock,
+  KeyRound,
+  Key,
+  Eye,
+  EyeOff,
+  X,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   Peminatan,
@@ -35,6 +42,7 @@ import {
   PortalMenuItem,
   AnnouncementItem,
   ReminderItem,
+  PortalUser,
 } from '../data/mkmData';
 import { GoogleDriveExplorer } from './GoogleDriveExplorer';
 import { GoogleSheetsManager } from './GoogleSheetsManager';
@@ -71,6 +79,10 @@ export const AdminDashboard: React.FC = () => {
     reminders,
     addReminder,
     deleteReminder,
+    portalUsers,
+    addPortalUser,
+    updatePortalUser,
+    deletePortalUser,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
@@ -83,10 +95,28 @@ export const AdminDashboard: React.FC = () => {
     | 'portal_menu'
     | 'announcements'
     | 'applicants'
+    | 'users_security'
     | 'drive'
     | 'sheets'
     | 'supabase'
   >('settings');
+
+  // Kelola User & Password Masuk Portal
+  const [adminNewPin, setAdminNewPin] = useState('');
+  const [adminConfirmPin, setAdminConfirmPin] = useState('');
+  const [adminPinError, setAdminPinError] = useState('');
+
+  // Modal / Form Tambah & Edit Pengguna
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userFormEmail, setUserFormEmail] = useState('');
+  const [userFormName, setUserFormName] = useState('');
+  const [userFormRole, setUserFormRole] = useState<'admin' | 'dosen' | 'mahasiswa'>('mahasiswa');
+  const [userFormNumber, setUserFormNumber] = useState('');
+  const [userFormPin, setUserFormPin] = useState('1234');
+  const [userFormError, setUserFormError] = useState('');
+  const [visiblePins, setVisiblePins] = useState<{ [key: string]: boolean }>({});
+  const [userSearchTerm, setUserSearchTerm] = useState('');
 
   // Form Kelola Menu Layanan (Adaptasi dari Apps Script vK)
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
@@ -267,6 +297,120 @@ export const AdminDashboard: React.FC = () => {
     showToast('Tautan aplikasi perkuliahan baru berhasil ditambahkan!');
   };
 
+  // --- Handlers: Kelola User & Password Masuk Portal ---
+  const handleUpdateAdminPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminPinError('');
+    if (!adminNewPin.trim()) {
+      setAdminPinError('Password baru tidak boleh kosong.');
+      return;
+    }
+    if (adminNewPin.trim().length < 4) {
+      setAdminPinError('Password minimal 4 karakter/digit.');
+      return;
+    }
+    if (adminNewPin.trim() !== adminConfirmPin.trim()) {
+      setAdminPinError('Konfirmasi password baru tidak cocok.');
+      return;
+    }
+
+    const adminUser = portalUsers.find((u) => u.role === 'admin') || portalUsers[0];
+    if (adminUser) {
+      updatePortalUser(adminUser.id, { pin: adminNewPin.trim() });
+      setAdminNewPin('');
+      setAdminConfirmPin('');
+      showToast(`Password Admin (${adminUser.email}) berhasil diperbarui! Gunakan password baru ini saat masuk portal.`);
+    }
+  };
+
+  const handleOpenAddUser = () => {
+    setEditingUserId(null);
+    setUserFormEmail('');
+    setUserFormName('');
+    setUserFormRole('mahasiswa');
+    setUserFormNumber('');
+    setUserFormPin('1234');
+    setUserFormError('');
+    setShowUserModal(true);
+  };
+
+  const handleOpenEditUser = (user: PortalUser) => {
+    setEditingUserId(user.id);
+    setUserFormEmail(user.email);
+    setUserFormName(user.name);
+    setUserFormRole(user.role);
+    setUserFormNumber(user.number || '');
+    setUserFormPin(user.pin);
+    setUserFormError('');
+    setShowUserModal(true);
+  };
+
+  const handleSaveUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    setUserFormError('');
+    if (!userFormEmail.trim()) {
+      setUserFormError('Email pengguna wajib diisi.');
+      return;
+    }
+    if (!userFormName.trim()) {
+      setUserFormError('Nama lengkap pengguna wajib diisi.');
+      return;
+    }
+    if (!userFormPin.trim() || userFormPin.trim().length < 3) {
+      setUserFormError('Password/PIN minimal 3 karakter.');
+      return;
+    }
+
+    if (editingUserId) {
+      updatePortalUser(editingUserId, {
+        email: userFormEmail.trim(),
+        name: userFormName.trim(),
+        role: userFormRole,
+        number: userFormNumber.trim(),
+        pin: userFormPin.trim(),
+      });
+      showToast(`Data dan Password pengguna "${userFormName}" berhasil diperbarui!`);
+    } else {
+      // Check duplicate email
+      if (portalUsers.some((u) => u.email.toLowerCase() === userFormEmail.trim().toLowerCase())) {
+        setUserFormError('Email ini sudah terdaftar. Gunakan alamat email lain.');
+        return;
+      }
+      addPortalUser({
+        email: userFormEmail.trim(),
+        name: userFormName.trim(),
+        role: userFormRole,
+        number: userFormNumber.trim(),
+        pin: userFormPin.trim(),
+      });
+      showToast(`Pengguna baru "${userFormName}" berhasil ditambahkan dengan PIN: ${userFormPin.trim()}!`);
+    }
+
+    setShowUserModal(false);
+  };
+
+  const handleResetPin = (user: PortalUser) => {
+    if (window.confirm(`Reset PIN pengguna "${user.name}" (${user.email}) kembali ke default "1234"?`)) {
+      updatePortalUser(user.id, { pin: '1234' });
+      showToast(`PIN pengguna "${user.name}" telah di-reset ke default 1234.`);
+    }
+  };
+
+  const handleDeleteUser = (user: PortalUser) => {
+    if (user.id === 'user-admin' || (user.role === 'admin' && portalUsers.filter((u) => u.role === 'admin').length <= 1)) {
+      alert('Akun Administrator utama tidak dapat dihapus demi keamanan akses sistem.');
+      return;
+    }
+    if (window.confirm(`Hapus pengguna "${user.name}" (${user.email}) dari portal?`)) {
+      deletePortalUser(user.id);
+      showToast(`Pengguna "${user.name}" berhasil dihapus.`);
+    }
+  };
+
+  const togglePinVisibility = (id: string) => {
+    setVisiblePins((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
       
@@ -424,6 +568,18 @@ export const AdminDashboard: React.FC = () => {
           >
             <UserCheck className="w-4 h-4" />
             <span>Pendaftar PMB ({applicants.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('users_security')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'users_security'
+                ? 'bg-rose-900 text-white shadow-sm ring-2 ring-rose-400'
+                : 'bg-white text-rose-800 hover:text-rose-950 hover:bg-rose-50 border border-rose-200'
+            }`}
+          >
+            <Lock className="w-4 h-4 text-rose-600" />
+            <span>Kelola User & Password ({portalUsers.length})</span>
           </button>
 
           <button
@@ -1799,6 +1955,425 @@ export const AdminDashboard: React.FC = () => {
 
         {/* TAB 10: Supabase Database Manager */}
         {activeTab === 'supabase' && <SupabaseManager />}
+
+        {/* TAB 11: Kelola User & Password Masuk Portal */}
+        {activeTab === 'users_security' && (
+          <div className="space-y-6">
+            
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-blue-950 rounded-2xl p-6 sm:p-8 text-white shadow-xl border border-rose-900/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-500/30">
+                  <Lock className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Autentikasi & Keamanan Hak Akses Portal</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Kelola Pengguna & Password Masuk Portal
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Kelola data akun mahasiswa, dosen, dan administrator. Anda dapat menambah pengguna baru, 
+                  mengedit data akun, serta mengganti kata sandi/PIN untuk autentikasi masuk ke portal.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenAddUser}
+                className="py-3 px-5 rounded-xl font-bold text-xs sm:text-sm bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Pengguna Baru</span>
+              </button>
+            </div>
+
+            {/* Stat Summary Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">Total Pengguna</span>
+                <span className="text-2xl font-extrabold text-slate-900">{portalUsers.length}</span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="text-[11px] font-semibold text-emerald-600 uppercase block">Administrator</span>
+                <span className="text-2xl font-extrabold text-emerald-700">
+                  {portalUsers.filter((u) => u.role === 'admin').length}
+                </span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="text-[11px] font-semibold text-amber-600 uppercase block">Dosen Terdaftar</span>
+                <span className="text-2xl font-extrabold text-amber-700">
+                  {portalUsers.filter((u) => u.role === 'dosen').length}
+                </span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="text-[11px] font-semibold text-blue-600 uppercase block">Mahasiswa</span>
+                <span className="text-2xl font-extrabold text-blue-700">
+                  {portalUsers.filter((u) => u.role === 'mahasiswa').length}
+                </span>
+              </div>
+            </div>
+
+            {/* Bagian 1: Ganti Password Admin (Keamanan Akses Masuk) */}
+            <div className="bg-white rounded-2xl border border-rose-200/80 p-6 shadow-sm space-y-4">
+              <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-900">
+                      Ganti Password Masuk Administrator
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Password ini akan digunakan saat Anda mengklik "Masuk Portal Admin" dari halaman awal.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
+                  <span className="text-slate-500">PIN Admin Saat Ini:</span>
+                  <span className="font-mono font-bold text-rose-700">
+                    {portalUsers.find((u) => u.role === 'admin')?.pin || '1234'}
+                  </span>
+                </div>
+              </div>
+
+              {adminPinError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <span>{adminPinError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleUpdateAdminPassword} className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Password / PIN Baru Admin
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Minimal 4 karakter/angka"
+                    value={adminNewPin}
+                    onChange={(e) => setAdminNewPin(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Konfirmasi Password Baru
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Ketik ulang password baru"
+                    value={adminConfirmPin}
+                    onChange={(e) => setAdminConfirmPin(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-rose-700 hover:bg-rose-600 text-white shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Perbarui Password Admin</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Bagian 2: Tabel Kelola Pengguna Portal & Password */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                  <h4 className="text-base font-bold text-slate-900">
+                    Daftar Pengguna Portal & Kredensial
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Klik tombol "Edit" untuk mengubah informasi nama, email, peran, atau kata sandi/PIN pengguna.
+                  </p>
+                </div>
+
+                {/* Search Bar */}
+                <div className="w-full sm:w-72">
+                  <input
+                    type="text"
+                    placeholder="Cari nama, email, NIDN/NIM..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900"
+                  />
+                </div>
+              </div>
+
+              {/* Table of Users */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="py-3 px-4">Pengguna</th>
+                      <th className="py-3 px-4">Peran Akses</th>
+                      <th className="py-3 px-4">NIDN / NIM</th>
+                      <th className="py-3 px-4">Password / PIN</th>
+                      <th className="py-3 px-4">Diperbarui</th>
+                      <th className="py-3 px-4 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {portalUsers
+                      .filter((u) => {
+                        if (!userSearchTerm.trim()) return true;
+                        const s = userSearchTerm.toLowerCase();
+                        return (
+                          u.name.toLowerCase().includes(s) ||
+                          u.email.toLowerCase().includes(s) ||
+                          (u.number && u.number.toLowerCase().includes(s))
+                        );
+                      })
+                      .map((u) => {
+                        const isVisible = visiblePins[u.id];
+                        return (
+                          <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                                    u.role === 'admin'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : u.role === 'dosen'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-blue-100 text-blue-800'
+                                  }`}
+                                >
+                                  {u.name.slice(0, 2).toUpperCase()}
+                                </div>
+                                <div>
+                                  <span className="font-bold text-slate-900 block">{u.name}</span>
+                                  <span className="text-[11px] text-slate-500 font-mono">{u.email}</span>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                  u.role === 'admin'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : u.role === 'dosen'
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                                }`}
+                              >
+                                {u.role === 'admin' ? '⚙️ Admin' : u.role === 'dosen' ? '👨‍🏫 Dosen' : '🎓 Mahasiswa'}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-4 font-mono text-slate-600">
+                              {u.number || '-'}
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                                  {isVisible ? u.pin : '••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => togglePinVisibility(u.id)}
+                                  className="text-slate-400 hover:text-slate-700 p-1 rounded"
+                                  title={isVisible ? 'Sembunyikan Password' : 'Lihat Password'}
+                                >
+                                  {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4 text-slate-400 text-[11px]">
+                              {u.updatedAt || 'Awal'}
+                            </td>
+
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditUser(u)}
+                                  className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer"
+                                  title="Edit Pengguna & Password"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                  <span>Edit</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetPin(u)}
+                                  className="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 font-semibold text-[11px] transition-colors cursor-pointer"
+                                  title="Reset PIN ke 1234"
+                                >
+                                  Reset 1234
+                                </button>
+
+                                {u.id !== 'user-admin' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteUser(u)}
+                                    className="p-1 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                                    title="Hapus Pengguna"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* Modal Tambah / Edit Pengguna & Password */}
+        {showUserModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
+            <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-6">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-300">
+                    <Key className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      {editingUserId ? 'Edit Pengguna & Password Portal' : 'Tambah Pengguna Baru Portal'}
+                    </h3>
+                    <p className="text-[11px] text-slate-300">
+                      Sistem Autentikasi MKM UM Pontianak
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowUserModal(false)}
+                  className="p-1 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Form */}
+              <form onSubmit={handleSaveUser} className="p-6 space-y-4">
+                {userFormError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    <span>{userFormError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Nama Lengkap & Gelar *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Dr. Budi Santoso, M.Kes atau Ahmad Fauzi"
+                    value={userFormName}
+                    onChange={(e) => setUserFormName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      Email Akun Portal *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="contoh: dosen.baru@unmuhpnk.ac.id"
+                      value={userFormEmail}
+                      onChange={(e) => setUserFormEmail(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      Peran / Hak Akses *
+                    </label>
+                    <select
+                      value={userFormRole}
+                      onChange={(e) => setUserFormRole(e.target.value as 'admin' | 'dosen' | 'mahasiswa')}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 bg-white"
+                    >
+                      <option value="mahasiswa">🎓 Mahasiswa</option>
+                      <option value="dosen">👨‍🏫 Dosen</option>
+                      <option value="admin">⚙️ Administrator</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      Nomor Identitas (NIDN / NIM)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={userFormRole === 'dosen' ? 'NIDN Dosen' : userFormRole === 'mahasiswa' ? 'NIM Mahasiswa' : 'Opsional'}
+                      value={userFormNumber}
+                      onChange={(e) => setUserFormNumber(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      Kata Sandi / PIN Masuk Portal *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: 1234 atau password rahasia"
+                      value={userFormPin}
+                      onChange={(e) => setUserFormPin(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono font-bold text-rose-800"
+                    />
+                    <span className="text-[10px] text-slate-400 block">
+                      Digunakan oleh user untuk login ke portal
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowUserModal(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold shadow-md transition-colors flex items-center gap-2 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{editingUserId ? 'Simpan Perubahan' : 'Tambahkan Pengguna'}</span>
+                  </button>
+                </div>
+              </form>
+
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

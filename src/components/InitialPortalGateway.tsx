@@ -275,23 +275,24 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons for Admin */}
+              {/* Action Buttons for Admin - Wajib Password */}
               <div className="p-6 pt-0 relative z-10 space-y-2">
                 <button
                   type="button"
-                  onClick={() => handleDirectEnter('admin')}
-                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                  onClick={() => onOpenPortalLogin('admin')}
+                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
                 >
-                  <span>Masuk Portal Admin</span>
+                  <Lock className="w-4 h-4 text-emerald-200" />
+                  <span>Masuk Portal Admin (Wajib Password)</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => onOpenPortalLogin('admin')}
-                  className="w-full py-2 text-center text-xs text-emerald-300 hover:text-white transition-colors flex items-center justify-center gap-1"
+                  className="w-full py-2 text-center text-xs text-emerald-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Lock className="w-3 h-3" />
-                  <span>Login Akun Administrator</span>
+                  <span>Autentikasi Sandi / PIN Administrator</span>
                 </button>
               </div>
             </div>

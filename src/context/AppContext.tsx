@@ -20,6 +20,8 @@ import {
   DEFAULT_PORTAL_MENUS,
   DEFAULT_ANNOUNCEMENTS,
   DEFAULT_REMINDERS,
+  PortalUser,
+  DEFAULT_PORTAL_USERS,
 } from '../data/mkmData';
 import {
   getStoredSupabaseConfig,
@@ -85,6 +87,17 @@ interface AppContextType {
 
   favoriteMenuIds: string[];
   toggleFavoriteMenu: (id: string) => void;
+
+  // Manajemen Pengguna & Password Portal
+  portalUsers: PortalUser[];
+  addPortalUser: (user: Omit<PortalUser, 'id' | 'updatedAt'>) => void;
+  updatePortalUser: (id: string, updated: Partial<PortalUser>) => void;
+  deletePortalUser: (id: string) => void;
+  validatePortalLogin: (
+    identifier: string,
+    pin: string,
+    role?: 'admin' | 'dosen' | 'mahasiswa'
+  ) => { success: boolean; user?: PortalUser; message?: string };
 
   // Active view management
   activePortalView: 'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi';
@@ -216,6 +229,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
+  // Pengguna & Password Masuk Portal
+  const [portalUsers, setPortalUsers] = useState<PortalUser[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_portal_users`);
+      return saved ? JSON.parse(saved) : DEFAULT_PORTAL_USERS;
+    } catch {
+      return DEFAULT_PORTAL_USERS;
+    }
+  });
+
   // Automatically fetch from Supabase if configured on startup
   useEffect(() => {
     const config = getStoredSupabaseConfig();
@@ -322,6 +345,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error(e);
     }
   }, [favoriteMenuIds]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_portal_users`, JSON.stringify(portalUsers));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [portalUsers]);
 
   const login = (role: 'admin' | 'dosen' | 'mahasiswa', identifier: string, name?: string) => {
     let userObj: CurrentUser;
@@ -485,6 +516,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setReminders((prev) => prev.filter((r) => r.id !== id));
   };
 
+  // Manajemen Akun & Password Masuk Portal
+  const addPortalUser = (user: Omit<PortalUser, 'id' | 'updatedAt'>) => {
+    const newUser: PortalUser = {
+      ...user,
+      id: `user-${Date.now()}`,
+      updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
+    };
+    setPortalUsers((prev) => [newUser, ...prev]);
+  };
+
+  const updatePortalUser = (id: string, updated: Partial<PortalUser>) => {
+    setPortalUsers((prev) =>
+      prev.map((u) =>
+        u.id === id
+          ? {
+              ...u,
+              ...updated,
+              updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
+            }
+          : u
+      )
+    );
+  };
+
+  const deletePortalUser = (id: string) => {
+    setPortalUsers((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  const validatePortalLogin = (
+    identifier: string,
+    pin: string,
+    role?: 'admin' | 'dosen' | 'mahasiswa'
+  ): { success: boolean; user?: PortalUser; message?: string } => {
+    const cleanId = identifier.trim().toLowerCase();
+    const cleanPin = pin.trim();
+
+    // Find user by email, ID, or NIM/NIDN
+    let found = portalUsers.find(
+      (u) =>
+        u.email.toLowerCase() === cleanId ||
+        u.id.toLowerCase() === cleanId ||
+        (u.number && u.number.trim().toLowerCase() === cleanId) ||
+        (cleanId === 'admin' && u.role === 'admin') ||
+        (cleanId === 'admin.mkm' && u.role === 'admin')
+    );
+
+    // If not found directly and role is specified, try finding first matching user of that role if cleanId is generic
+    if (!found && role) {
+      if (cleanId === role || cleanId === 'demo' || cleanId === 'user') {
+        found = portalUsers.find((u) => u.role === role);
+      }
+    }
+
+    if (!found) {
+      return {
+        success: false,
+        message: 'Pengguna tidak ditemukan. Periksa Email, NIDN, atau NIM yang dimasukkan.',
+      };
+    }
+
+    if (found.pin !== cleanPin) {
+      return {
+        success: false,
+        message: 'Password / PIN salah. Silakan masukkan password yang benar.',
+      };
+    }
+
+    return {
+      success: true,
+      user: found,
+    };
+  };
+
   const resetAllDataToDefault = () => {
     setSettings(DEFAULT_SITE_SETTINGS);
     setPeminatans(DEFAULT_PEMINATAN_DATA);
@@ -496,6 +600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPortalMenus(DEFAULT_PORTAL_MENUS);
     setAnnouncements(DEFAULT_ANNOUNCEMENTS);
     setReminders(DEFAULT_REMINDERS);
+    setPortalUsers(DEFAULT_PORTAL_USERS);
     setFavoriteMenuIds(['menu-1', 'menu-2', 'menu-3']);
     localStorage.removeItem(`${STORAGE_KEY}_settings`);
     localStorage.removeItem(`${STORAGE_KEY}_peminatans`);
@@ -507,6 +612,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(`${STORAGE_KEY}_portal_menus`);
     localStorage.removeItem(`${STORAGE_KEY}_announcements`);
     localStorage.removeItem(`${STORAGE_KEY}_reminders`);
+    localStorage.removeItem(`${STORAGE_KEY}_portal_users`);
     localStorage.removeItem(`${STORAGE_KEY}_fav_menus`);
   };
 
@@ -549,6 +655,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteReminder,
         favoriteMenuIds,
         toggleFavoriteMenu,
+        portalUsers,
+        addPortalUser,
+        updatePortalUser,
+        deletePortalUser,
+        validatePortalLogin,
       }}
     >
       {children}

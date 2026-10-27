@@ -13,7 +13,7 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
   onClose,
   defaultRole = 'admin',
 }) => {
-  const { login } = useApp();
+  const { login, portalUsers, validatePortalLogin } = useApp();
   const [selectedRole, setSelectedRole] = useState<'admin' | 'dosen' | 'mahasiswa'>(defaultRole);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,18 +24,32 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
     if (isOpen) {
       setSelectedRole(defaultRole);
       setErrorMsg('');
-      setUsername('');
-      setPassword('');
+      const defaultUser = portalUsers.find((u) => u.role === defaultRole);
+      if (defaultUser) {
+        setUsername(defaultUser.email);
+        setPassword('');
+        setCustomName(defaultUser.name);
+      } else {
+        setUsername('');
+        setPassword('');
+      }
     }
-  }, [isOpen, defaultRole]);
+  }, [isOpen, defaultRole, portalUsers]);
 
   if (!isOpen) return null;
 
   const handleRoleChange = (role: 'admin' | 'dosen' | 'mahasiswa') => {
     setSelectedRole(role);
     setErrorMsg('');
-    setUsername('');
-    setPassword('');
+    const user = portalUsers.find((u) => u.role === role);
+    if (user) {
+      setUsername(user.email);
+      setPassword('');
+      setCustomName(user.name);
+    } else {
+      setUsername('');
+      setPassword('');
+    }
   };
 
   const handleCustomLogin = (e: React.FormEvent) => {
@@ -45,33 +59,35 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
       return;
     }
     if (!password.trim()) {
-      setErrorMsg('Mohon masukkan PIN / Password (PIN default: 1234).');
+      setErrorMsg('Mohon masukkan PIN / Password untuk masuk ke portal.');
       return;
     }
 
-    // Match exact users from Apps Script database
-    const u = username.trim().toLowerCase();
-    if (u === 'admin@contoh.ac.id' || u === 'admin' || u === 'admin.mkm') {
-      login('admin', u, 'Admin Prodi MKM');
-    } else if (u === 'dosen@contoh.ac.id' || u === '0000000001' || u === '1102047801') {
-      login('dosen', u, customName || 'Dr. Dosen Contoh, M.Kes');
-    } else if (u === 'mahasiswa@contoh.ac.id' || u === '2400000001' || u === '241021004') {
-      login('mahasiswa', u, customName || 'Mahasiswa Contoh');
-    } else {
-      login(selectedRole, username, customName || undefined);
+    const validation = validatePortalLogin(username, password, selectedRole);
+    if (!validation.success) {
+      setErrorMsg(validation.message || 'Password atau identitas tidak sesuai.');
+      return;
     }
+
+    const matched = validation.user!;
+    login(matched.role, matched.email || matched.id, customName.trim() || matched.name);
     onClose();
   };
 
   const handleQuickDemoLogin = (role: 'admin' | 'dosen' | 'mahasiswa') => {
-    if (role === 'admin') {
-      login('admin', 'admin@contoh.ac.id', 'Admin Prodi MKM');
-    } else if (role === 'dosen') {
-      login('dosen', 'dosen@contoh.ac.id', 'Dr. Rochmawati, S.KM., M.Kes.');
-    } else {
-      login('mahasiswa', 'mahasiswa@contoh.ac.id', 'Ahmad Fauzi, S.KM.');
+    const userForRole = portalUsers.find((u) => u.role === role);
+    if (userForRole) {
+      setUsername(userForRole.email);
+      setPassword(userForRole.pin);
+      setCustomName(userForRole.name);
+      const validation = validatePortalLogin(userForRole.email, userForRole.pin, role);
+      if (validation.success && validation.user) {
+        login(validation.user.role, validation.user.email, validation.user.name);
+        onClose();
+      } else {
+        setErrorMsg('Validasi login otomatis gagal. Silakan masukkan password.');
+      }
     }
-    onClose();
   };
 
   return (
@@ -194,48 +210,44 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
             </span>
           </div>
 
-          {/* Quick Preset Accounts from Apps Script Data */}
-          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-              Pilihan Akun Terdaftar (Data Asli Code.gs · PIN: 1234):
-            </span>
+          {/* Quick Preset Accounts from Dynamic Portal Users */}
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Akun Terdaftar ({portalUsers.length} Pengguna):
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Klik untuk isi otomatis
+              </span>
+            </div>
             <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedRole('admin');
-                  setUsername('admin@contoh.ac.id');
-                  setPassword('1234');
-                  setCustomName('Admin Prodi MKM');
-                }}
-                className="px-2 py-1 text-[11px] font-bold rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors"
-              >
-                ⚙️ admin@contoh.ac.id
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedRole('dosen');
-                  setUsername('dosen@contoh.ac.id');
-                  setPassword('1234');
-                  setCustomName('Dr. Dosen Contoh, M.Kes');
-                }}
-                className="px-2 py-1 text-[11px] font-bold rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
-              >
-                👨‍🏫 dosen@contoh.ac.id
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedRole('mahasiswa');
-                  setUsername('mahasiswa@contoh.ac.id');
-                  setPassword('1234');
-                  setCustomName('Mahasiswa Contoh');
-                }}
-                className="px-2 py-1 text-[11px] font-bold rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-              >
-                🎓 mahasiswa@contoh.ac.id
-              </button>
+              {portalUsers.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRole(u.role);
+                    setUsername(u.email);
+                    setPassword(u.pin);
+                    setCustomName(u.name);
+                    setErrorMsg('');
+                  }}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    u.role === 'admin'
+                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300/40'
+                      : u.role === 'dosen'
+                      ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300/40'
+                      : 'bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-300/40'
+                  }`}
+                  title={`${u.name} (PIN: ${u.pin})`}
+                >
+                  <span>{u.role === 'admin' ? '⚙️' : u.role === 'dosen' ? '👨‍🏫' : '🎓'}</span>
+                  <span className="font-semibold">{u.email}</span>
+                  <span className="opacity-60 text-[10px] bg-white/70 px-1 py-0.2 rounded font-mono">
+                    PIN: {u.pin}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
 

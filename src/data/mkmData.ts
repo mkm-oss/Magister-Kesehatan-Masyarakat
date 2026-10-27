@@ -695,3 +695,45 @@ export const DEFAULT_INITIAL_APPLICANTS: ApplicantRecord[] = [
 
 export const TESTIMONIALS_DATA = DEFAULT_TESTIMONIALS_DATA;
 export const FAQS_DATA = DEFAULT_FAQS_DATA;
+
+// Model Pengguna & Kredensial Password Portal (Adaptasi tabel Pengguna dari Code.gs)
+export interface PortalUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'dosen' | 'mahasiswa';
+  number?: string; // NIDN / NIM
+  pin: string; // Password / PIN masuk portal
+  updatedAt?: string;
+}
+
+export const DEFAULT_PORTAL_USERS: PortalUser[] = [
+  {
+    id: 'user-admin',
+    email: 'admin@contoh.ac.id',
+    name: 'Admin Prodi MKM',
+    role: 'admin',
+    number: '',
+    pin: '1234',
+    updatedAt: '2026-10-26 12:00',
+  },
+  {
+    id: 'user-dosen',
+    email: 'dosen@contoh.ac.id',
+    name: 'Dr. Rochmawati, S.KM., M.Kes.',
+    role: 'dosen',
+    number: '1102047801',
+    pin: '1234',
+    updatedAt: '2026-10-26 12:00',
+  },
+  {
+    id: 'user-mhs',
+    email: 'mahasiswa@contoh.ac.id',
+    name: 'Ahmad Fauzi, S.KM.',
+    role: 'mahasiswa',
+    number: '241021004',
+    pin: '1234',
+    updatedAt: '2026-10-26 12:00',
+  },
+];
+
