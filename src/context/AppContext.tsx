@@ -257,11 +257,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  // Pengguna & Password Masuk Portal
+  // Pengguna & Password Masuk Portal (Selalu pastikan Superadmin & Akun Default tersedia)
   const [portalUsers, setPortalUsers] = useState<PortalUser[]>(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEY}_portal_users`);
-      return saved ? JSON.parse(saved) : DEFAULT_PORTAL_USERS;
+      if (saved) {
+        const parsed: PortalUser[] = JSON.parse(saved);
+        // Pastikan akun superadmin (mkm@unmuhpnk.ac.id) selalu ada
+        const hasSuper = parsed.some(
+          (u) => u.role === 'superadmin' || u.email.toLowerCase() === 'mkm@unmuhpnk.ac.id'
+        );
+        if (!hasSuper) {
+          const merged = [DEFAULT_PORTAL_USERS[0], ...parsed];
+          localStorage.setItem(`${STORAGE_KEY}_portal_users`, JSON.stringify(merged));
+          return merged;
+        }
+        return parsed;
+      }
+      return DEFAULT_PORTAL_USERS;
     } catch {
       return DEFAULT_PORTAL_USERS;
     }
@@ -696,9 +709,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // Direct fallback for superadmin credentials
-    if (!found && (cleanId === 'mkm@unmuhpnk.ac.id' || cleanId === 'superadmin@unmuhpnk.ac.id')) {
-      found = portalUsers.find((u) => u.role === 'superadmin');
+    // If not found in current state, fallback check against DEFAULT_PORTAL_USERS
+    if (!found) {
+      found = DEFAULT_PORTAL_USERS.find(
+        (u) =>
+          u.email.toLowerCase() === cleanId ||
+          u.id.toLowerCase() === cleanId ||
+          (u.number && u.number.trim().toLowerCase() === cleanId) ||
+          (cleanId === 'superadmin' && u.role === 'superadmin') ||
+          (cleanId === 'admin' && (u.role === 'admin' || u.role === 'superadmin')) ||
+          (cleanId === 'admin.mkm' && (u.role === 'admin' || u.role === 'superadmin')) ||
+          (cleanId === 'mkm@unmuhpnk.ac.id' && u.role === 'superadmin') ||
+          (cleanId === 'dosen' && u.role === 'dosen') ||
+          (cleanId === 'mahasiswa' && u.role === 'mahasiswa')
+      );
+
+      // If found in default, also inject into state so it's persisted in localStorage
+      if (found) {
+        const userToAdd = found;
+        setPortalUsers((prev) => {
+          if (!prev.some((u) => u.id === userToAdd.id || u.email === userToAdd.email)) {
+            const next = [userToAdd, ...prev];
+            try {
+              localStorage.setItem(`${STORAGE_KEY}_portal_users`, JSON.stringify(next));
+            } catch {}
+            return next;
+          }
+          return prev;
+        });
+      }
     }
 
     if (!found) {

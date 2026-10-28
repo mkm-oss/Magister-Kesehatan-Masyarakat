@@ -45,7 +45,7 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
 
     setIsLoading(true);
 
-    const validation = validatePortalLogin(username, password, defaultRole);
+    const validation = validatePortalLogin(username, password);
     if (!validation.success) {
       setErrorMsg(validation.message || 'Identitas atau password tidak sesuai.');
       setIsLoading(false);
