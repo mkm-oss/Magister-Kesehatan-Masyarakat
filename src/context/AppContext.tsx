@@ -8,6 +8,9 @@ import {
   SiteSettings,
   FaqItem,
   PortalMenuItem,
+  PortalSubMenuItem,
+  CustomPage,
+  DEFAULT_CUSTOM_PAGES,
   AnnouncementItem,
   ReminderItem,
   DEFAULT_SITE_SETTINGS,
@@ -30,19 +33,19 @@ import {
   updateApplicantStatusInSupabase,
 } from '../services/supabaseService';
 
-export type UserRole = 'admin' | 'dosen' | 'mahasiswa' | null;
+export type UserRole = 'superadmin' | 'admin' | 'dosen' | 'mahasiswa' | null;
 
 export interface CurrentUser {
   role: UserRole;
   name: string;
-  identifier: string; // NIDN for dosen, NIM for mahasiswa, username for admin
+  identifier: string; // NIDN for dosen, NIM for mahasiswa, username for admin/superadmin
   email?: string;
   avatarInitial: string;
 }
 
 interface AppContextType {
   currentUser: CurrentUser | null;
-  login: (role: 'admin' | 'dosen' | 'mahasiswa', identifier: string, name?: string) => void;
+  login: (role: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa', identifier: string, name?: string) => void;
   logout: () => void;
 
   // Site state
@@ -76,6 +79,17 @@ interface AppContextType {
   portalMenus: PortalMenuItem[];
   savePortalMenu: (menu: PortalMenuItem) => void;
   deletePortalMenu: (id: string) => void;
+  addPortalSubMenu: (parentMenuId: string, subMenu: Omit<PortalSubMenuItem, 'id'>) => void;
+  deletePortalSubMenu: (parentMenuId: string, subMenuId: string) => void;
+  updatePortalSubMenu: (parentMenuId: string, subMenuId: string, updated: Partial<PortalSubMenuItem>) => void;
+
+  // Custom Pages (Halaman Baru) Management
+  customPages: CustomPage[];
+  addCustomPage: (page: Omit<CustomPage, 'id' | 'createdAt' | 'updatedAt' | 'views'>) => void;
+  updateCustomPage: (id: string, updated: Partial<CustomPage>) => void;
+  deleteCustomPage: (id: string) => void;
+  activePageSlug: string | null;
+  setActivePageSlug: (slug: string | null) => void;
 
   announcements: AnnouncementItem[];
   addAnnouncement: (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => void;
@@ -96,12 +110,12 @@ interface AppContextType {
   validatePortalLogin: (
     identifier: string,
     pin: string,
-    role?: 'admin' | 'dosen' | 'mahasiswa'
+    role?: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa'
   ) => { success: boolean; user?: PortalUser; message?: string };
 
   // Active view management
-  activePortalView: 'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi';
-  setActivePortalView: (view: 'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi') => void;
+  activePortalView: 'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi' | 'custom_page';
+  setActivePortalView: (view: 'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi' | 'custom_page') => void;
 
   // Reset to factory defaults
   resetAllDataToDefault: () => void;
@@ -123,7 +137,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  const [activePortalView, setActivePortalView] = useState<'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi'>('landing');
+  const [activePortalView, setActivePortalView] = useState<
+    'landing' | 'admin' | 'dosen' | 'mahasiswa' | 'sim_akreditasi' | 'custom_page'
+  >('landing');
+
+  const [activePageSlug, setActivePageSlug] = useState<string | null>(null);
+
+  // Custom Pages (Halaman Baru) State
+  const [customPages, setCustomPages] = useState<CustomPage[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_custom_pages`);
+      return saved ? JSON.parse(saved) : DEFAULT_CUSTOM_PAGES;
+    } catch {
+      return DEFAULT_CUSTOM_PAGES;
+    }
+  });
 
   // CMS state
   const [settings, setSettings] = useState<SiteSettings>(() => {
@@ -354,14 +382,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [portalUsers]);
 
-  const login = (role: 'admin' | 'dosen' | 'mahasiswa', identifier: string, name?: string) => {
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_custom_pages`, JSON.stringify(customPages));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [customPages]);
+
+  const login = (role: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa', identifier: string, name?: string) => {
     let userObj: CurrentUser;
-    if (role === 'admin') {
+    if (role === 'superadmin') {
+      userObj = {
+        role: 'superadmin',
+        name: name || 'Super Administrator (MKM FIKPsi)',
+        identifier: identifier || 'mkm@unmuhpnk.ac.id',
+        email: 'mkm@unmuhpnk.ac.id',
+        avatarInitial: 'SA',
+      };
+      setActivePortalView('admin');
+    } else if (role === 'admin') {
       userObj = {
         role: 'admin',
         name: name || 'Administrator Pascasarjana MKM',
         identifier: identifier || 'admin.mkm',
-        email: 'mkm@unmuhpnk.ac.id',
+        email: 'admin@contoh.ac.id',
         avatarInitial: 'AD',
       };
       setActivePortalView('admin');
@@ -491,6 +536,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPortalMenus((prev) => prev.filter((m) => m.id !== id));
   };
 
+  const addPortalSubMenu = (parentMenuId: string, subMenu: Omit<PortalSubMenuItem, 'id'>) => {
+    const newSub: PortalSubMenuItem = {
+      ...subMenu,
+      id: `sub-${Date.now()}`,
+    };
+    setPortalMenus((prev) =>
+      prev.map((menu) => {
+        if (menu.id === parentMenuId) {
+          const currentSubs = menu.subMenus || [];
+          return {
+            ...menu,
+            subMenus: [...currentSubs, newSub],
+          };
+        }
+        return menu;
+      })
+    );
+  };
+
+  const updatePortalSubMenu = (
+    parentMenuId: string,
+    subMenuId: string,
+    updated: Partial<PortalSubMenuItem>
+  ) => {
+    setPortalMenus((prev) =>
+      prev.map((menu) => {
+        if (menu.id === parentMenuId && menu.subMenus) {
+          return {
+            ...menu,
+            subMenus: menu.subMenus.map((sub) =>
+              sub.id === subMenuId ? { ...sub, ...updated } : sub
+            ),
+          };
+        }
+        return menu;
+      })
+    );
+  };
+
+  const deletePortalSubMenu = (parentMenuId: string, subMenuId: string) => {
+    setPortalMenus((prev) =>
+      prev.map((menu) => {
+        if (menu.id === parentMenuId && menu.subMenus) {
+          return {
+            ...menu,
+            subMenus: menu.subMenus.filter((sub) => sub.id !== subMenuId),
+          };
+        }
+        return menu;
+      })
+    );
+  };
+
+  // Custom Pages Management
+  const addCustomPage = (page: Omit<CustomPage, 'id' | 'createdAt' | 'updatedAt' | 'views'>) => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const newPage: CustomPage = {
+      ...page,
+      id: `page-${Date.now()}`,
+      createdAt: now,
+      updatedAt: now,
+      views: 1,
+    };
+    setCustomPages((prev) => [newPage, ...prev]);
+  };
+
+  const updateCustomPage = (id: string, updated: Partial<CustomPage>) => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    setCustomPages((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updated, updatedAt: now } : p))
+    );
+  };
+
+  const deleteCustomPage = (id: string) => {
+    setCustomPages((prev) => prev.filter((p) => p.id !== id));
+  };
+
   const addAnnouncement = (item: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
     const newAnn: AnnouncementItem = {
       ...item,
@@ -547,7 +669,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const validatePortalLogin = (
     identifier: string,
     pin: string,
-    role?: 'admin' | 'dosen' | 'mahasiswa'
+    role?: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa'
   ): { success: boolean; user?: PortalUser; message?: string } => {
     const cleanId = identifier.trim().toLowerCase();
     const cleanPin = pin.trim();
@@ -558,8 +680,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         u.email.toLowerCase() === cleanId ||
         u.id.toLowerCase() === cleanId ||
         (u.number && u.number.trim().toLowerCase() === cleanId) ||
-        (cleanId === 'admin' && u.role === 'admin') ||
-        (cleanId === 'admin.mkm' && u.role === 'admin')
+        (cleanId === 'superadmin' && u.role === 'superadmin') ||
+        (cleanId === 'admin' && (u.role === 'admin' || u.role === 'superadmin')) ||
+        (cleanId === 'admin.mkm' && (u.role === 'admin' || u.role === 'superadmin')) ||
+        (cleanId === 'mkm@unmuhpnk.ac.id' && u.role === 'superadmin')
     );
 
     // If not found directly and role is specified, try finding first matching user of that role if cleanId is generic
@@ -567,6 +691,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (cleanId === role || cleanId === 'demo' || cleanId === 'user') {
         found = portalUsers.find((u) => u.role === role);
       }
+    }
+
+    // Direct fallback for superadmin credentials
+    if (!found && (cleanId === 'mkm@unmuhpnk.ac.id' || cleanId === 'superadmin@unmuhpnk.ac.id')) {
+      found = portalUsers.find((u) => u.role === 'superadmin');
     }
 
     if (!found) {
@@ -598,6 +727,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFaqs(DEFAULT_FAQS_DATA);
     setApplicants(DEFAULT_INITIAL_APPLICANTS);
     setPortalMenus(DEFAULT_PORTAL_MENUS);
+    setCustomPages(DEFAULT_CUSTOM_PAGES);
     setAnnouncements(DEFAULT_ANNOUNCEMENTS);
     setReminders(DEFAULT_REMINDERS);
     setPortalUsers(DEFAULT_PORTAL_USERS);
@@ -610,6 +740,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(`${STORAGE_KEY}_faqs`);
     localStorage.removeItem(`${STORAGE_KEY}_applicants`);
     localStorage.removeItem(`${STORAGE_KEY}_portal_menus`);
+    localStorage.removeItem(`${STORAGE_KEY}_custom_pages`);
     localStorage.removeItem(`${STORAGE_KEY}_announcements`);
     localStorage.removeItem(`${STORAGE_KEY}_reminders`);
     localStorage.removeItem(`${STORAGE_KEY}_portal_users`);
@@ -647,6 +778,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         portalMenus,
         savePortalMenu,
         deletePortalMenu,
+        addPortalSubMenu,
+        updatePortalSubMenu,
+        deletePortalSubMenu,
+        customPages,
+        addCustomPage,
+        updateCustomPage,
+        deleteCustomPage,
+        activePageSlug,
+        setActivePageSlug,
         announcements,
         addAnnouncement,
         deleteAnnouncement,

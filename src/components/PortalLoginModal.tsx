@@ -5,16 +5,16 @@ import { useApp } from '../context/AppContext';
 interface PortalLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultRole?: 'admin' | 'dosen' | 'mahasiswa';
+  defaultRole?: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa';
 }
 
 export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
   isOpen,
   onClose,
-  defaultRole = 'admin',
+  defaultRole = 'superadmin',
 }) => {
   const { login, portalUsers, validatePortalLogin } = useApp();
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'dosen' | 'mahasiswa'>(defaultRole);
+  const [selectedRole, setSelectedRole] = useState<'superadmin' | 'admin' | 'dosen' | 'mahasiswa'>(defaultRole);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [customName, setCustomName] = useState('');
@@ -38,7 +38,7 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleRoleChange = (role: 'admin' | 'dosen' | 'mahasiswa') => {
+  const handleRoleChange = (role: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa') => {
     setSelectedRole(role);
     setErrorMsg('');
     const user = portalUsers.find((u) => u.role === role);
@@ -104,44 +104,57 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
           </button>
         </div>
 
-        {/* Role Selector Tabs */}
-        <div className="grid grid-cols-3 p-2 bg-slate-100 border-b border-slate-200 gap-1.5 text-xs font-semibold">
+        {/* Role Selector Tabs (4 Roles including Superadmin) */}
+        <div className="grid grid-cols-4 p-2 bg-slate-100 border-b border-slate-200 gap-1 text-[11px] font-semibold">
           <button
             type="button"
-            onClick={() => handleRoleChange('admin')}
-            className={`py-2.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-              selectedRole === 'admin'
-                ? 'bg-blue-900 text-white shadow-sm'
+            onClick={() => handleRoleChange('superadmin')}
+            className={`py-2 px-1 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 transition-all text-center ${
+              selectedRole === 'superadmin'
+                ? 'bg-amber-600 text-white shadow-sm font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <ShieldCheck className="w-4 h-4" />
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+            <span>Superadmin</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleRoleChange('admin')}
+            className={`py-2 px-1 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 transition-all text-center ${
+              selectedRole === 'admin'
+                ? 'bg-blue-900 text-white shadow-sm font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
             <span>Admin</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleRoleChange('dosen')}
-            className={`py-2.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+            className={`py-2 px-1 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 transition-all text-center ${
               selectedRole === 'dosen'
-                ? 'bg-blue-900 text-white shadow-sm'
+                ? 'bg-blue-900 text-white shadow-sm font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <UserCheck className="w-4 h-4" />
+            <UserCheck className="w-3.5 h-3.5" />
             <span>Dosen</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleRoleChange('mahasiswa')}
-            className={`py-2.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+            className={`py-2 px-1 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 transition-all text-center ${
               selectedRole === 'mahasiswa'
-                ? 'bg-blue-900 text-white shadow-sm'
+                ? 'bg-blue-900 text-white shadow-sm font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <GraduationCap className="w-4 h-4" />
+            <GraduationCap className="w-3.5 h-3.5" />
             <span>Mahasiswa</span>
           </button>
         </div>
@@ -153,9 +166,14 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
           <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-950 flex items-start gap-2.5">
             <KeyRound className="w-4 h-4 text-blue-800 shrink-0 mt-0.5" />
             <div>
+              {selectedRole === 'superadmin' && (
+                <span>
+                  <strong className="text-amber-800">Akses Super Administrator:</strong> Hak akses tak terbatas untuk mengedit seluruh bagian aplikasi, membuat pengguna baru, menyusun menu & sub-menu, serta membuat halaman publik baru.
+                </span>
+              )}
               {selectedRole === 'admin' && (
                 <span>
-                  <strong>Portal Administrator:</strong> Kelola penuh seluruh konten website, ubah peminatan, kurikulum, data dosen, biaya, serta pantau pendaftar PMB.
+                  <strong>Portal Administrator:</strong> Kelola konten website, ubah peminatan, kurikulum, data dosen, biaya, serta pantau pendaftar PMB.
                 </span>
               )}
               {selectedRole === 'dosen' && (

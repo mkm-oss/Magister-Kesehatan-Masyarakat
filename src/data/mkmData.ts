@@ -61,6 +61,16 @@ export interface AcademicLink {
   iconName: string;
 }
 
+export interface PortalSubMenuItem {
+  id: string;
+  title: string;
+  description?: string;
+  url: string; // URL external (https://...) atau internal page slug (/halaman/slug)
+  icon?: string;
+  order: number;
+  active: boolean;
+}
+
 export interface PortalMenuItem {
   id: string;
   title: string;
@@ -70,7 +80,25 @@ export interface PortalMenuItem {
   icon: string; // Emoji icon e.g. 🎓, 📝, 🎬, 📊, ✉️, 🏛️
   order: number;
   active: boolean;
-  targetAudience: 'Semua' | 'Mahasiswa' | 'Dosen';
+  targetAudience: 'Semua' | 'Mahasiswa' | 'Dosen' | 'Publik';
+  subMenus?: PortalSubMenuItem[];
+}
+
+export interface CustomPage {
+  id: string;
+  title: string;
+  slug: string; // URL slug e.g. "panduan-tesis-2026"
+  excerpt: string;
+  content: string; // Rich formatted text / HTML
+  category: string;
+  targetAudience: 'Semua' | 'Mahasiswa' | 'Dosen' | 'Publik';
+  isPublished: boolean;
+  icon?: string;
+  author: string;
+  createdAt: string;
+  updatedAt: string;
+  views?: number;
+  featuredInMenu?: boolean;
 }
 
 export interface AnnouncementItem {
@@ -439,6 +467,35 @@ export const DEFAULT_PORTAL_MENUS: PortalMenuItem[] = [
     order: 1,
     active: true,
     targetAudience: 'Semua',
+    subMenus: [
+      {
+        id: 'sub-1-1',
+        title: 'Panduan & Alur Tesis (Halaman)',
+        description: 'Tahapan ujian, publikasi jurnal, dan yudisium',
+        url: '/halaman/panduan-tesis-2026',
+        icon: '📘',
+        order: 1,
+        active: true,
+      },
+      {
+        id: 'sub-1-2',
+        title: 'Logbook Bimbingan Pembimbing',
+        description: 'Portal pencatatan konsultasi berkala',
+        url: 'https://tesis.unmuhpnk.ac.id/mkm',
+        icon: '💻',
+        order: 2,
+        active: true,
+      },
+      {
+        id: 'sub-1-3',
+        title: 'Pengurusan Ethical Clearance (Etik)',
+        description: 'Formulir komisi etik penelitian kesehatan',
+        url: 'https://fikpsi.unmuhpnk.ac.id/komisi-etik',
+        icon: '⚖️',
+        order: 3,
+        active: true,
+      },
+    ],
   },
   {
     id: 'menu-2',
@@ -701,21 +758,33 @@ export interface PortalUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'dosen' | 'mahasiswa';
-  number?: string; // NIDN / NIM
+  role: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa';
+  number?: string; // NIDN / NIM / NIP
   pin: string; // Password / PIN masuk portal
   updatedAt?: string;
+  permissions?: string[]; // Hak akses spesifik
 }
 
 export const DEFAULT_PORTAL_USERS: PortalUser[] = [
+  {
+    id: 'user-superadmin',
+    email: 'mkm@unmuhpnk.ac.id',
+    name: 'Super Administrator (MKM FIKPsi)',
+    role: 'superadmin',
+    number: 'SUPER-MKM-01',
+    pin: '1234',
+    updatedAt: '2026-10-27 12:00',
+    permissions: ['all_access', 'manage_users', 'manage_menus', 'manage_pages', 'manage_akreditasi', 'manage_cms'],
+  },
   {
     id: 'user-admin',
     email: 'admin@contoh.ac.id',
     name: 'Admin Prodi MKM',
     role: 'admin',
-    number: '',
+    number: 'ADM-001',
     pin: '1234',
     updatedAt: '2026-10-26 12:00',
+    permissions: ['manage_cms', 'manage_applicants'],
   },
   {
     id: 'user-dosen',
@@ -736,4 +805,56 @@ export const DEFAULT_PORTAL_USERS: PortalUser[] = [
     updatedAt: '2026-10-26 12:00',
   },
 ];
+
+export const DEFAULT_CUSTOM_PAGES: CustomPage[] = [
+  {
+    id: 'page-01',
+    title: 'Panduan Penulisan & Alur Sidang Tesis S2 MKM',
+    slug: 'panduan-tesis-2026',
+    excerpt: 'Petunjuk lengkap tahapan usulan proposal, seminar hasil, publikasi wajib di jurnal SINTA/Scopus, dan tata cara pendaftaran ujian tertutup.',
+    content: `<h3>1. Ketentuan Umum Penyusunan Tesis</h3><p>Tesis pada Program Studi Magister Kesehatan Masyarakat memiliki bobot 6 SKS dan wajib mencerminkan kemampuan riset mandiri tingkat KKNI Level 8 yang berfokus pada masalah kesehatan masyarakat wilayah lahan basah tropis.</p><h3>2. Tahapan Pembimbingan</h3><ul><li>Pengajuan topik dan penetapan Komisi Pembimbing (Pembimbing Utama & Pembimbing Pendamping).</li><li>Kolokium / Seminar Usulan Proposal Tesis.</li><li>Pengurusan Surat Laik Etik (Ethical Clearance) Komisi Etik Penelitian Kesehatan.</li><li>Pengumpulan data primer/sekunder dan analisis data komprehensif.</li><li>Seminar Hasil Penelitian (Semhas).</li><li>Ujian Sidang Tertutup Tesis.</li></ul><h3>3. Syarat Publikasi Ilmiah</h3><p>Sebelum pelaksanaan yudisium, mahasiswa wajib memiliki naskah publikasi yang telah accepted/published pada jurnal nasional terakreditasi minimal SINTA 2 atau jurnal internasional terindeks bereputasi.</p>`,
+    category: 'Akademik & Tesis',
+    targetAudience: 'Semua',
+    isPublished: true,
+    icon: '📘',
+    author: 'Super Administrator',
+    createdAt: '2026-10-20 10:00',
+    updatedAt: '2026-10-27 08:30',
+    views: 142,
+    featuredInMenu: true,
+  },
+  {
+    id: 'page-02',
+    title: 'SOP Pelayanan Laboratorium Kesehatan Lingkungan & K3',
+    slug: 'sop-laboratorium-k3',
+    excerpt: 'Standar operasional prosedur peminjaman alat ukur kualitas lingkungan (kebisingan, pencahayaan, gas detector) dan uji parameter air.',
+    content: `<h3>1. Prosedur Peminjaman Alat Laboratorium</h3><p>Mahasiswa pascasarjana yang sedang melakukan riset tesis dapat menggunakan instrumen laboratorium terpadu dengan mengisi formulir permohonan minimal 3 hari sebelum jadwal sampling lapangan.</p><h3>2. Protokol Keselamatan & Kalibrasi</h3><p>Seluruh instrumen wajib dikalibrasi berkala dan pengguna wajib mematuhi standar keselamatan kerja (K3) serta mengenakan APD lengkap di area laboratorium.</p>`,
+    category: 'Fasilitas & Sarpras',
+    targetAudience: 'Mahasiswa',
+    isPublished: true,
+    icon: '🔬',
+    author: 'Super Administrator',
+    createdAt: '2026-10-22 14:15',
+    updatedAt: '2026-10-25 11:00',
+    views: 89,
+    featuredInMenu: true,
+  },
+  {
+    id: 'page-03',
+    title: 'Kebijakan Insentif Riset Publikasi Internasional Bereputasi',
+    slug: 'insentif-riset-publikasi',
+    excerpt: 'Pedoman pemberian bantuan pembiayaan APC (Article Processing Charge) dan penghargaan publikasi Scopus Q1-Q4 bagi DTPS dan mahasiswa.',
+    content: `<h3>1. Skema Insentif Publikasi</h3><p>Fakultas Ilmu Kesehatan dan Psikologi memberikan apresiasi pendanaan bagi dosen tetap dan mahasiswa yang mempublikasikan hasil riset pada jurnal bereputasi tinggi.</p><h3>2. Kriteria Jurnal</h3><ul><li>Jurnal Internasional Bereputasi Terindeks Scopus (Q1, Q2, Q3, Q4) / Web of Science.</li><li>Jurnal Nasional Terakreditasi Peringkat SINTA 1 dan SINTA 2.</li></ul>`,
+    category: 'Penelitian & PkM',
+    targetAudience: 'Dosen',
+    isPublished: true,
+    icon: '🏆',
+    author: 'Super Administrator',
+    createdAt: '2026-10-24 09:00',
+    updatedAt: '2026-10-26 16:40',
+    views: 115,
+    featuredInMenu: true,
+  },
+];
+
 

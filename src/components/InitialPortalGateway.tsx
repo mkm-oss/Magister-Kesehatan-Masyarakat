@@ -20,7 +20,7 @@ import {
 import { useApp } from '../context/AppContext';
 
 interface InitialPortalGatewayProps {
-  onOpenPortalLogin: (role: 'admin' | 'dosen' | 'mahasiswa') => void;
+  onOpenPortalLogin: (role?: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa') => void;
   onOpenRegister: () => void;
   onOpenBrochure: () => void;
 }
@@ -294,11 +294,11 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onOpenPortalLogin('admin')}
-                  className="w-full py-2 text-center text-xs text-emerald-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  onClick={() => onOpenPortalLogin('superadmin')}
+                  className="w-full py-2 text-center text-xs text-amber-300 hover:text-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-slate-900/70 hover:bg-slate-900 rounded-lg border border-amber-500/30"
                 >
-                  <Lock className="w-3 h-3" />
-                  <span>Autentikasi Sandi / PIN Administrator</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Masuk Akses Super Administrator</span>
                 </button>
               </div>
             </div>

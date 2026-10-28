@@ -41,6 +41,7 @@ export const MahasiswaPortal: React.FC = () => {
     currentUser,
     logout,
     setActivePortalView,
+    setActivePageSlug,
     portalMenus,
     announcements,
     reminders,
@@ -48,6 +49,17 @@ export const MahasiswaPortal: React.FC = () => {
     toggleFavoriteMenu,
     addReminder,
   } = useApp();
+
+  const handleOpenMenu = (url?: string) => {
+    if (!url) return;
+    if (url.startsWith('/halaman/')) {
+      const slug = url.replace('/halaman/', '');
+      setActivePageSlug(slug);
+      setActivePortalView('custom_page');
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<
     'overview' | 'directory' | 'announcements' | 'agenda' | 'drive' | 'sheets'
@@ -504,9 +516,37 @@ export const MahasiswaPortal: React.FC = () => {
                           <h4 className="text-[15px] sm:text-[16px] font-extrabold text-[#032B5B] mb-1.5 group-hover:text-[#054DA0] transition-colors leading-[1.35]">
                             {item.title}
                           </h4>
-                          <p className="text-[13px] text-[#5B6B82] line-clamp-2 leading-relaxed mb-4">
+                          <p className="text-[13px] text-[#5B6B82] line-clamp-2 leading-relaxed mb-3">
                             {item.description}
                           </p>
+
+                          {/* Sub-menu jika ada */}
+                          {item.subMenus && item.subMenus.filter((s) => s.active).length > 0 && (
+                            <div className="mb-3 space-y-1.5 bg-[#F8FAFC] p-2.5 rounded-lg border border-[#DCE5F0]/70">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#054DA0] block">
+                                Sub-Menu & Formulir:
+                              </span>
+                              <div className="space-y-1">
+                                {item.subMenus.filter((s) => s.active).map((sub) => (
+                                  <button
+                                    key={sub.id}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenMenu(sub.url);
+                                    }}
+                                    className="w-full text-left px-2 py-1.5 rounded-md bg-white hover:bg-[#EBF3FC] text-slate-800 hover:text-[#054DA0] border border-slate-200/60 flex items-center justify-between text-xs transition-colors cursor-pointer"
+                                  >
+                                    <span className="flex items-center gap-1.5 truncate">
+                                      <span>{sub.icon || '📌'}</span>
+                                      <span className="font-semibold truncate">{sub.title}</span>
+                                    </span>
+                                    <ChevronRight className="w-3 h-3 text-[#5B6B82] shrink-0" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Footer Kartu: Kategori (.tg) & Tautan (Buka Layanan ↗) */}
@@ -514,14 +554,13 @@ export const MahasiswaPortal: React.FC = () => {
                           <span className="text-[11.5px] font-bold px-2.5 py-0.5 rounded-full bg-[#EBF3FC] text-[#054DA0]">
                             {item.category}
                           </span>
-                          <a
-                            href={item.url || '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[13px] font-extrabold text-[#054DA0] hover:text-[#032B5B] hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                          <button
+                            type="button"
+                            onClick={() => handleOpenMenu(item.url)}
+                            className="text-[13px] font-extrabold text-[#054DA0] hover:text-[#032B5B] hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform cursor-pointer"
                           >
-                            <span>Buka Layanan ↗</span>
-                          </a>
+                            <span>{item.url?.startsWith('/halaman/') ? 'Buka Halaman ➔' : 'Buka Layanan ↗'}</span>
+                          </button>
                         </div>
                       </div>
                     );
@@ -718,23 +757,50 @@ export const MahasiswaPortal: React.FC = () => {
                         <h4 className="text-[15px] sm:text-[16px] font-extrabold text-[#032B5B] mb-1.5 group-hover:text-[#054DA0] transition-colors leading-[1.35]">
                           {item.title}
                         </h4>
-                        <p className="text-[13px] text-[#5B6B82] line-clamp-2 leading-relaxed mb-4">
+                        <p className="text-[13px] text-[#5B6B82] line-clamp-2 leading-relaxed mb-3">
                           {item.description}
                         </p>
+
+                        {/* Sub-menu jika ada */}
+                        {item.subMenus && item.subMenus.filter((s) => s.active).length > 0 && (
+                          <div className="mb-3 space-y-1.5 bg-[#F8FAFC] p-2.5 rounded-lg border border-[#DCE5F0]/70">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#054DA0] block">
+                              Sub-Menu & Formulir:
+                            </span>
+                            <div className="space-y-1">
+                              {item.subMenus.filter((s) => s.active).map((sub) => (
+                                <button
+                                  key={sub.id}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenMenu(sub.url);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded-md bg-white hover:bg-[#EBF3FC] text-slate-800 hover:text-[#054DA0] border border-slate-200/60 flex items-center justify-between text-xs transition-colors cursor-pointer"
+                                >
+                                  <span className="flex items-center gap-1.5 truncate">
+                                    <span>{sub.icon || '📌'}</span>
+                                    <span className="font-semibold truncate">{sub.title}</span>
+                                  </span>
+                                  <ChevronRight className="w-3 h-3 text-[#5B6B82] shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-3 border-t border-[#EEF3F8] flex items-center justify-between mt-auto">
                         <span className="text-[11.5px] font-bold px-2.5 py-0.5 rounded-full bg-[#EBF3FC] text-[#054DA0]">
                           {item.category}
                         </span>
-                        <a
-                          href={item.url || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[13px] font-extrabold text-[#054DA0] hover:text-[#032B5B] hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenMenu(item.url)}
+                          className="text-[13px] font-extrabold text-[#054DA0] hover:text-[#032B5B] hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform cursor-pointer"
                         >
-                          <span>Buka Layanan ↗</span>
-                        </a>
+                          <span>{item.url?.startsWith('/halaman/') ? 'Buka Halaman ➔' : 'Buka Layanan ↗'}</span>
+                        </button>
                       </div>
                     </div>
                   );

@@ -34,6 +34,12 @@ import {
   X,
   ShieldAlert,
   ShieldCheck,
+  FileText,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Award,
 } from 'lucide-react';
 import {
   Peminatan,
@@ -41,6 +47,8 @@ import {
   Lecturer,
   AcademicLink,
   PortalMenuItem,
+  PortalSubMenuItem,
+  CustomPage,
   AnnouncementItem,
   ReminderItem,
   PortalUser,
@@ -74,6 +82,14 @@ export const AdminDashboard: React.FC = () => {
     portalMenus,
     savePortalMenu,
     deletePortalMenu,
+    addPortalSubMenu,
+    updatePortalSubMenu,
+    deletePortalSubMenu,
+    customPages,
+    addCustomPage,
+    updateCustomPage,
+    deleteCustomPage,
+    setActivePageSlug,
     announcements,
     addAnnouncement,
     deleteAnnouncement,
@@ -94,6 +110,7 @@ export const AdminDashboard: React.FC = () => {
     | 'lecturers'
     | 'links'
     | 'portal_menu'
+    | 'custom_pages'
     | 'announcements'
     | 'applicants'
     | 'users_security'
@@ -107,12 +124,12 @@ export const AdminDashboard: React.FC = () => {
   const [adminConfirmPin, setAdminConfirmPin] = useState('');
   const [adminPinError, setAdminPinError] = useState('');
 
-  // Modal / Form Tambah & Edit Pengguna
+  // Modal / Form Tambah & Edit Pengguna (Mendukung Superadmin)
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [userFormEmail, setUserFormEmail] = useState('');
   const [userFormName, setUserFormName] = useState('');
-  const [userFormRole, setUserFormRole] = useState<'admin' | 'dosen' | 'mahasiswa'>('mahasiswa');
+  const [userFormRole, setUserFormRole] = useState<'superadmin' | 'admin' | 'dosen' | 'mahasiswa'>('mahasiswa');
   const [userFormNumber, setUserFormNumber] = useState('');
   const [userFormPin, setUserFormPin] = useState('1234');
   const [userFormError, setUserFormError] = useState('');
@@ -127,8 +144,33 @@ export const AdminDashboard: React.FC = () => {
   const [menuCat, setMenuCat] = useState('Akademik');
   const [menuIcon, setMenuIcon] = useState('🎓');
   const [menuOrder, setMenuOrder] = useState(99);
-  const [menuTarget, setMenuTarget] = useState<'Semua' | 'Mahasiswa' | 'Dosen'>('Semua');
+  const [menuTarget, setMenuTarget] = useState<'Semua' | 'Mahasiswa' | 'Dosen' | 'Publik'>('Semua');
   const [menuActive, setMenuActive] = useState(true);
+
+  // Sub-Menu Management State (Kelola Sub-Menu Hierarkis)
+  const [expandedMenuSubId, setExpandedMenuSubId] = useState<string | null>(null);
+  const [showSubMenuModal, setShowSubMenuModal] = useState(false);
+  const [targetParentMenuId, setTargetParentMenuId] = useState<string | null>(null);
+  const [editingSubMenuId, setEditingSubMenuId] = useState<string | null>(null);
+  const [subMenuTitle, setSubMenuTitle] = useState('');
+  const [subMenuUrl, setSubMenuUrl] = useState('');
+  const [subMenuDesc, setSubMenuDesc] = useState('');
+  const [subMenuIcon, setSubMenuIcon] = useState('📌');
+  const [subMenuOrder, setSubMenuOrder] = useState(1);
+  const [subMenuActive, setSubMenuActive] = useState(true);
+
+  // Custom Pages (Halaman Baru) Builder State
+  const [showPageModal, setShowPageModal] = useState(false);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [pageTitle, setPageTitle] = useState('');
+  const [pageSlug, setPageSlug] = useState('');
+  const [pageCategory, setPageCategory] = useState('Akademik & Tesis');
+  const [pageIcon, setPageIcon] = useState('📄');
+  const [pageTarget, setPageTarget] = useState<'Semua' | 'Mahasiswa' | 'Dosen' | 'Publik'>('Semua');
+  const [pageExcerpt, setPageExcerpt] = useState('');
+  const [pageContent, setPageContent] = useState('');
+  const [pagePublished, setPagePublished] = useState(true);
+  const [pageSearch, setPageSearch] = useState('');
 
   // Form Pengumuman & Agenda Admin
   const [admAnnTitle, setAdmAnnTitle] = useState('');
@@ -412,6 +454,154 @@ export const AdminDashboard: React.FC = () => {
     setVisiblePins((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // Page Builder Handlers (Halaman Baru)
+  const handleOpenAddPage = () => {
+    setEditingPageId(null);
+    setPageTitle('');
+    setPageSlug('');
+    setPageCategory('Akademik & Tesis');
+    setPageIcon('📄');
+    setPageTarget('Semua');
+    setPageExcerpt('');
+    setPageContent('');
+    setPagePublished(true);
+    setShowPageModal(true);
+  };
+
+  const handleEditPage = (page: CustomPage) => {
+    setEditingPageId(page.id);
+    setPageTitle(page.title);
+    setPageSlug(page.slug);
+    setPageCategory(page.category);
+    setPageIcon(page.icon || '📄');
+    setPageTarget(page.targetAudience);
+    setPageExcerpt(page.excerpt);
+    setPageContent(page.content);
+    setPagePublished(page.isPublished);
+    setShowPageModal(true);
+  };
+
+  const handleSavePage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pageTitle.trim()) return;
+
+    // generate clean slug
+    const finalSlug = (pageSlug.trim() || pageTitle.trim())
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-');
+
+    if (editingPageId) {
+      updateCustomPage(editingPageId, {
+        title: pageTitle.trim(),
+        slug: finalSlug,
+        category: pageCategory,
+        icon: pageIcon.trim() || '📄',
+        targetAudience: pageTarget,
+        excerpt: pageExcerpt.trim(),
+        content: pageContent.trim(),
+        isPublished: pagePublished,
+      });
+      showToast(`Halaman "${pageTitle}" berhasil diperbarui!`);
+    } else {
+      addCustomPage({
+        title: pageTitle.trim(),
+        slug: finalSlug,
+        category: pageCategory,
+        icon: pageIcon.trim() || '📄',
+        targetAudience: pageTarget,
+        excerpt: pageExcerpt.trim(),
+        content: pageContent.trim(),
+        isPublished: pagePublished,
+        author: currentUser?.name || 'Super Administrator',
+      });
+      showToast(`Halaman baru "${pageTitle}" berhasil diterbitkan!`);
+    }
+    setShowPageModal(false);
+  };
+
+  const handleDeletePage = (page: CustomPage) => {
+    if (window.confirm(`Hapus halaman "${page.title}"? Tindakan ini tidak dapat dibatalkan.`)) {
+      deleteCustomPage(page.id);
+      showToast(`Halaman "${page.title}" berhasil dihapus.`);
+    }
+  };
+
+  const handleCreateMenuFromPage = (page: CustomPage) => {
+    savePortalMenu({
+      id: `menu-page-${Date.now()}`,
+      title: page.title,
+      description: page.excerpt || `Halaman informasi ${page.category}`,
+      url: `/halaman/${page.slug}`,
+      category: page.category,
+      icon: page.icon || '📘',
+      order: portalMenus.length + 1,
+      targetAudience: page.targetAudience === 'Publik' ? 'Semua' : page.targetAudience,
+      active: true,
+    });
+    showToast(`Halaman "${page.title}" berhasil ditambahkan ke Menu Portal!`);
+  };
+
+  // Sub-Menu Handlers (Kelola Sub-Menu Hierarkis)
+  const handleOpenAddSubMenu = (parentMenuId: string) => {
+    setTargetParentMenuId(parentMenuId);
+    setEditingSubMenuId(null);
+    setSubMenuTitle('');
+    setSubMenuUrl('');
+    setSubMenuDesc('');
+    setSubMenuIcon('📌');
+    setSubMenuOrder(1);
+    setSubMenuActive(true);
+    setShowSubMenuModal(true);
+  };
+
+  const handleEditSubMenu = (parentMenuId: string, subMenu: PortalSubMenuItem) => {
+    setTargetParentMenuId(parentMenuId);
+    setEditingSubMenuId(subMenu.id);
+    setSubMenuTitle(subMenu.title);
+    setSubMenuUrl(subMenu.url);
+    setSubMenuDesc(subMenu.description || '');
+    setSubMenuIcon(subMenu.icon || '📌');
+    setSubMenuOrder(subMenu.order);
+    setSubMenuActive(subMenu.active);
+    setShowSubMenuModal(true);
+  };
+
+  const handleSaveSubMenu = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetParentMenuId || !subMenuTitle.trim()) return;
+
+    if (editingSubMenuId) {
+      updatePortalSubMenu(targetParentMenuId, editingSubMenuId, {
+        title: subMenuTitle.trim(),
+        url: subMenuUrl.trim(),
+        description: subMenuDesc.trim(),
+        icon: subMenuIcon.trim() || '📌',
+        order: Number(subMenuOrder) || 1,
+        active: subMenuActive,
+      });
+      showToast(`Sub-menu "${subMenuTitle}" berhasil diperbarui!`);
+    } else {
+      addPortalSubMenu(targetParentMenuId, {
+        title: subMenuTitle.trim(),
+        url: subMenuUrl.trim(),
+        description: subMenuDesc.trim(),
+        icon: subMenuIcon.trim() || '📌',
+        order: Number(subMenuOrder) || 1,
+        active: subMenuActive,
+      });
+      showToast(`Sub-menu "${subMenuTitle}" berhasil ditambahkan!`);
+    }
+    setShowSubMenuModal(false);
+  };
+
+  const handleDeleteSubMenu = (parentMenuId: string, subMenuId: string, title: string) => {
+    if (window.confirm(`Hapus sub-menu "${title}"?`)) {
+      deletePortalSubMenu(parentMenuId, subMenuId);
+      showToast(`Sub-menu "${title}" berhasil dihapus.`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
       
@@ -425,9 +615,20 @@ export const AdminDashboard: React.FC = () => {
               className="h-9 w-auto bg-white/10 p-1 rounded"
             />
             <div>
-              <span className="font-bold text-sm block">Panel Administrator CMS</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm block">Panel Administrator CMS</span>
+                {currentUser?.role === 'superadmin' ? (
+                  <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm uppercase tracking-wider">
+                    👑 Superadmin
+                  </span>
+                ) : (
+                  <span className="bg-blue-800 text-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                    Admin
+                  </span>
+                )}
+              </div>
               <span className="text-[11px] text-amber-300 font-medium">
-                MKM FIKPsi UM Pontianak · Hak Akses Penuh
+                {currentUser?.name || 'MKM FIKPsi UM Pontianak'} · {currentUser?.role === 'superadmin' ? 'Akses Penuh Super Administrator (User, Menu, Halaman & Akreditasi)' : 'Hak Akses Administrator'}
               </span>
             </div>
           </div>
@@ -544,7 +745,20 @@ export const AdminDashboard: React.FC = () => {
             }`}
           >
             <Compass className="w-4 h-4 text-blue-600" />
-            <span>Kelola Menu Layanan ({portalMenus.length})</span>
+            <span>Kelola Menu & Sub-Menu ({portalMenus.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('custom_pages')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'custom_pages'
+                ? 'bg-purple-900 text-white shadow-sm ring-2 ring-purple-400'
+                : 'bg-white text-purple-800 hover:text-purple-950 hover:bg-purple-50 border border-purple-200'
+            }`}
+          >
+            <FileText className="w-4 h-4 text-purple-600" />
+            <span>Kelola Halaman Baru ({customPages.length})</span>
+            <span className="text-[10px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.5 rounded-full uppercase">Super</span>
           </button>
 
           <button
@@ -1614,6 +1828,7 @@ export const AdminDashboard: React.FC = () => {
                       <option value="Semua">Semua Pengguna</option>
                       <option value="Mahasiswa">Hanya Mahasiswa</option>
                       <option value="Dosen">Hanya Dosen</option>
+                      <option value="Publik">Publik Umum</option>
                     </select>
                   </div>
                   <div>
@@ -1679,6 +1894,82 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Sub-menu section */}
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-800">
+                            Sub-Menu ({m.subMenus?.length || 0})
+                          </span>
+                          {(m.subMenus?.length || 0) > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedMenuSubId(expandedMenuSubId === m.id ? null : m.id)}
+                              className="text-[11px] text-blue-700 hover:underline flex items-center gap-0.5 font-semibold"
+                            >
+                              <span>{expandedMenuSubId === m.id ? 'Tutup' : 'Lihat'}</span>
+                              {expandedMenuSubId === m.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </button>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddSubMenu(m.id)}
+                          className="px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg flex items-center gap-1 border border-indigo-200 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>+ Sub-Menu</span>
+                        </button>
+                      </div>
+
+                      {/* Expanded Sub-menus list */}
+                      {expandedMenuSubId === m.id && (
+                        <div className="mt-2.5 space-y-2 bg-white rounded-lg p-2.5 border border-slate-200">
+                          {(!m.subMenus || m.subMenus.length === 0) ? (
+                            <p className="text-[11px] text-slate-400 italic">Belum ada sub-menu. Klik "+ Sub-Menu" untuk menambahkan.</p>
+                          ) : (
+                            m.subMenus.map((sub) => (
+                              <div
+                                key={sub.id}
+                                className="p-2 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-between gap-2 text-xs"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-base">{sub.icon || '📌'}</span>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-bold text-slate-800 truncate">{sub.title}</span>
+                                      <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${sub.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                                        {sub.active ? 'Aktif' : 'Off'}
+                                      </span>
+                                    </div>
+                                    <div className="text-[10px] text-blue-700 font-mono truncate">{sub.url}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditSubMenu(m.id, sub)}
+                                    className="p-1 text-slate-500 hover:text-blue-700 rounded hover:bg-slate-200"
+                                    title="Edit Sub-Menu"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSubMenu(m.id, sub.id, sub.title)}
+                                    className="p-1 text-rose-500 hover:text-rose-700 rounded hover:bg-rose-50"
+                                    title="Hapus Sub-Menu"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="pt-2 border-t border-slate-200/80 flex items-center justify-end gap-2">
                       <button
                         type="button"
@@ -1697,7 +1988,7 @@ export const AdminDashboard: React.FC = () => {
                         className="px-3 py-1 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center gap-1"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
-                        <span>Ubah</span>
+                        <span>Ubah Menu</span>
                       </button>
                       <button
                         type="button"
@@ -1715,6 +2006,193 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: Kelola Halaman Baru (CMS Custom Pages Builder) */}
+        {activeTab === 'custom_pages' && (
+          <div className="space-y-6">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 rounded-2xl p-6 sm:p-8 text-white shadow-xl border border-purple-800/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold border border-purple-500/30">
+                  <FileText className="w-3.5 h-3.5 text-purple-400" />
+                  <span>CMS Page Builder · Akses Super Administrator</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Manajemen Halaman Baru & Konten Dinamis
+                </h3>
+                <p className="text-xs sm:text-sm text-purple-200/90 leading-relaxed">
+                  Buat dan kelola halaman baru secara fleksibel untuk Program Studi MKM. Anda dapat mempublikasikan panduan,
+                  SOP, kebijakan prodi, atau materi khusus yang langsung dapat ditautkan ke menu portal maupun diakses via URL.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenAddPage}
+                className="py-3 px-5 rounded-xl font-bold text-xs sm:text-sm bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Buat Halaman Baru</span>
+              </button>
+            </div>
+
+            {/* Stat Summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">Total Halaman</span>
+                <span className="text-2xl font-extrabold text-slate-900">{customPages.length}</span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="text-[11px] font-semibold text-emerald-600 uppercase block">Diterbitkan</span>
+                <span className="text-2xl font-extrabold text-emerald-700">
+                  {customPages.filter((p) => p.isPublished).length}
+                </span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="text-[11px] font-semibold text-amber-600 uppercase block">Draft / Nonaktif</span>
+                <span className="text-2xl font-extrabold text-amber-700">
+                  {customPages.filter((p) => !p.isPublished).length}
+                </span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="text-[11px] font-semibold text-indigo-600 uppercase block">Total Kunjungan</span>
+                <span className="text-2xl font-extrabold text-indigo-700">
+                  {customPages.reduce((acc, p) => acc + (p.views || 0), 0)}
+                </span>
+              </div>
+            </div>
+
+            {/* List Halaman & Search */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Daftar Halaman Khusus ({customPages.length})
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Halaman dapat langsung dibuka dengan tombol "Lihat Halaman" atau dijadikan tombol menu portal.
+                  </p>
+                </div>
+
+                <div className="w-full sm:w-72">
+                  <input
+                    type="text"
+                    placeholder="Cari judul, kategori, slug..."
+                    value={pageSearch}
+                    onChange={(e) => setPageSearch(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-900/20 focus:border-purple-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {customPages
+                  .filter((p) => {
+                    if (!pageSearch.trim()) return true;
+                    const s = pageSearch.toLowerCase();
+                    return (
+                      p.title.toLowerCase().includes(s) ||
+                      p.slug.toLowerCase().includes(s) ||
+                      p.category.toLowerCase().includes(s) ||
+                      p.excerpt.toLowerCase().includes(s)
+                    );
+                  })
+                  .map((page) => (
+                    <div
+                      key={page.id}
+                      className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-purple-200 transition-all flex flex-col justify-between space-y-4"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-2xl p-2 rounded-xl bg-purple-100 text-purple-900 border border-purple-200 shadow-xs">
+                              {page.icon || '📄'}
+                            </span>
+                            <div>
+                              <h5 className="font-bold text-sm text-slate-900">{page.title}</h5>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded">
+                                  {page.category}
+                                </span>
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  /halaman/{page.slug}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                              page.isPublished
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {page.isPublished ? '● Terbit' : '○ Draft'}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                          {page.excerpt || 'Tidak ada ringkasan.'}
+                        </p>
+
+                        <div className="flex items-center gap-3 text-[11px] text-slate-500 pt-1">
+                          <span>Penulis: <strong className="text-slate-700">{page.author}</strong></span>
+                          <span>·</span>
+                          <span>Target: <strong className="text-slate-700">{page.targetAudience}</strong></span>
+                          <span>·</span>
+                          <span>Dilihat: <strong className="text-purple-700 font-mono">{page.views || 0}x</strong></span>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActivePageSlug(page.slug);
+                            setActivePortalView('custom_page');
+                          }}
+                          className="px-3 py-1.5 text-xs font-bold text-purple-900 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Buka Halaman</span>
+                        </button>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleCreateMenuFromPage(page)}
+                            className="px-2.5 py-1 text-[11px] font-bold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors"
+                            title="Tambahkan halaman ini sebagai item di Menu Portal"
+                          >
+                            + Jadi Menu
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleEditPage(page)}
+                            className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-slate-200/70 hover:bg-slate-300 rounded-lg flex items-center gap-1 transition-colors"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePage(page)}
+                            className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Hapus Halaman"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
@@ -1988,10 +2466,16 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Stat Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase block">Total Pengguna</span>
                 <span className="text-2xl font-extrabold text-slate-900">{portalUsers.length}</span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-amber-200 shadow-sm bg-amber-50/30">
+                <span className="text-[11px] font-bold text-amber-700 uppercase block">Superadmin</span>
+                <span className="text-2xl font-extrabold text-amber-900">
+                  {portalUsers.filter((u) => u.role === 'superadmin').length}
+                </span>
               </div>
               <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
                 <span className="text-[11px] font-semibold text-emerald-600 uppercase block">Administrator</span>
@@ -2000,14 +2484,14 @@ export const AdminDashboard: React.FC = () => {
                 </span>
               </div>
               <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                <span className="text-[11px] font-semibold text-amber-600 uppercase block">Dosen Terdaftar</span>
-                <span className="text-2xl font-extrabold text-amber-700">
+                <span className="text-[11px] font-semibold text-blue-600 uppercase block">Dosen</span>
+                <span className="text-2xl font-extrabold text-blue-700">
                   {portalUsers.filter((u) => u.role === 'dosen').length}
                 </span>
               </div>
               <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                <span className="text-[11px] font-semibold text-blue-600 uppercase block">Mahasiswa</span>
-                <span className="text-2xl font-extrabold text-blue-700">
+                <span className="text-[11px] font-semibold text-slate-600 uppercase block">Mahasiswa</span>
+                <span className="text-2xl font-extrabold text-slate-700">
                   {portalUsers.filter((u) => u.role === 'mahasiswa').length}
                 </span>
               </div>
@@ -2134,21 +2618,22 @@ export const AdminDashboard: React.FC = () => {
                         );
                       })
                       .map((u) => {
-                        const isVisible = visiblePins[u.id];
                         return (
                           <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-3">
                                 <div
                                   className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                                    u.role === 'admin'
+                                    u.role === 'superadmin'
+                                      ? 'bg-amber-100 text-amber-900 ring-2 ring-amber-400 font-black'
+                                      : u.role === 'admin'
                                       ? 'bg-emerald-100 text-emerald-800'
                                       : u.role === 'dosen'
-                                      ? 'bg-amber-100 text-amber-800'
-                                      : 'bg-blue-100 text-blue-800'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-slate-100 text-slate-800'
                                   }`}
                                 >
-                                  {u.name.slice(0, 2).toUpperCase()}
+                                  {u.role === 'superadmin' ? '👑' : u.name.slice(0, 2).toUpperCase()}
                                 </div>
                                 <div>
                                   <span className="font-bold text-slate-900 block">{u.name}</span>
@@ -2160,14 +2645,22 @@ export const AdminDashboard: React.FC = () => {
                             <td className="py-3.5 px-4">
                               <span
                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                  u.role === 'admin'
+                                  u.role === 'superadmin'
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300 ring-1 ring-amber-400 font-black'
+                                    : u.role === 'admin'
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                     : u.role === 'dosen'
-                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                    : 'bg-slate-100 text-slate-800 border border-slate-200'
                                 }`}
                               >
-                                {u.role === 'admin' ? '⚙️ Admin' : u.role === 'dosen' ? '👨‍🏫 Dosen' : '🎓 Mahasiswa'}
+                                {u.role === 'superadmin'
+                                  ? '👑 Superadmin'
+                                  : u.role === 'admin'
+                                  ? '⚙️ Admin'
+                                  : u.role === 'dosen'
+                                  ? '👨‍🏫 Dosen'
+                                  : '🎓 Mahasiswa'}
                               </span>
                             </td>
 
@@ -2212,7 +2705,7 @@ export const AdminDashboard: React.FC = () => {
                                   Reset PIN
                                 </button>
 
-                                {u.id !== 'user-admin' && (
+                                {u.id !== 'user-admin' && u.id !== 'user-superadmin' && (
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteUser(u)}
@@ -2308,12 +2801,13 @@ export const AdminDashboard: React.FC = () => {
                     </label>
                     <select
                       value={userFormRole}
-                      onChange={(e) => setUserFormRole(e.target.value as 'admin' | 'dosen' | 'mahasiswa')}
+                      onChange={(e) => setUserFormRole(e.target.value as any)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 bg-white"
                     >
-                      <option value="mahasiswa">🎓 Mahasiswa</option>
-                      <option value="dosen">👨‍🏫 Dosen</option>
-                      <option value="admin">⚙️ Administrator</option>
+                      <option value="superadmin">👑 Super Administrator (Akses Penuh)</option>
+                      <option value="admin">⚙️ Administrator Prodi</option>
+                      <option value="dosen">👨‍🏫 Dosen MKM</option>
+                      <option value="mahasiswa">🎓 Mahasiswa MKM</option>
                     </select>
                   </div>
                 </div>
@@ -2365,6 +2859,317 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <Save className="w-4 h-4" />
                     <span>{editingUserId ? 'Simpan Perubahan' : 'Tambahkan Pengguna'}</span>
+                  </button>
+                </div>
+              </form>
+
+            </div>
+          </div>
+        )}
+
+        {/* Modal Buat / Edit Halaman Baru (Page Builder) */}
+        {showPageModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+            <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-6">
+              
+              <div className="flex items-center justify-between px-6 py-4 bg-purple-950 text-white">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-300">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      {editingPageId ? 'Edit Halaman Khusus' : 'Buat Halaman Baru Prodi'}
+                    </h3>
+                    <p className="text-[11px] text-purple-300">
+                      CMS Page Builder · MKM FIKPsi UM Pontianak
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPageModal(false)}
+                  className="p-1 text-purple-200 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSavePage} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="sm:col-span-3 space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Judul Halaman *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: Panduan Tesis & Ujian Sidang MKM 2026"
+                      value={pageTitle}
+                      onChange={(e) => {
+                        setPageTitle(e.target.value);
+                        if (!editingPageId) {
+                          setPageSlug(
+                            e.target.value
+                              .toLowerCase()
+                              .replace(/[^\w\s-]/g, '')
+                              .replace(/\s+/g, '-')
+                          );
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-900/20 focus:border-purple-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Ikon / Emoji</label>
+                    <input
+                      type="text"
+                      placeholder="📄, 📚, 🔬"
+                      value={pageIcon}
+                      onChange={(e) => setPageIcon(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-center text-lg focus:outline-none focus:ring-2 focus:ring-purple-900/20 focus:border-purple-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Slug URL *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="panduan-tesis-2026"
+                      value={pageSlug}
+                      onChange={(e) => setPageSlug(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-900/20 focus:border-purple-900"
+                    />
+                    <span className="text-[10px] text-slate-400 block font-mono">/halaman/{pageSlug || 'slug'}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Kategori</label>
+                    <input
+                      type="text"
+                      placeholder="Akademik & Tesis / SOP / Riset"
+                      value={pageCategory}
+                      onChange={(e) => setPageCategory(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-900/20 focus:border-purple-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Target Audiens</label>
+                    <select
+                      value={pageTarget}
+                      onChange={(e) => setPageTarget(e.target.value as any)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-900/20 focus:border-purple-900"
+                    >
+                      <option value="Semua">Semua Pengguna</option>
+                      <option value="Mahasiswa">Hanya Mahasiswa</option>
+                      <option value="Dosen">Hanya Dosen</option>
+                      <option value="Publik">Publik Umum</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Ringkasan Singkat (Excerpt)</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Penjelasan ringkas 1-2 kalimat mengenai isi halaman ini..."
+                    value={pageExcerpt}
+                    onChange={(e) => setPageExcerpt(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-900/20 focus:border-purple-900"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700">Konten Halaman (HTML / Teks) *</label>
+                    <span className="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-mono">
+                      Mendukung HTML & Paragraf
+                    </span>
+                  </div>
+                  <textarea
+                    rows={10}
+                    required
+                    placeholder="Tuliskan isi artikel, panduan, atau tata cara lengkap di sini..."
+                    value={pageContent}
+                    onChange={(e) => setPageContent(e.target.value)}
+                    className="w-full p-3.5 rounded-xl border border-slate-300 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-900/20 focus:border-purple-900 leading-relaxed"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">Status Publikasi</span>
+                    <span className="text-[11px] text-slate-500">
+                      Jika aktif, halaman dapat diakses oleh audiens terpilih.
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={pagePublished}
+                      onChange={(e) => setPagePublished(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                  </label>
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowPageModal(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-white text-xs font-bold shadow-md transition-colors flex items-center gap-2 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{editingPageId ? 'Simpan Perubahan Halaman' : 'Terbitkan Halaman Baru'}</span>
+                  </button>
+                </div>
+              </form>
+
+            </div>
+          </div>
+        )}
+
+        {/* Modal Buat / Edit Sub-Menu */}
+        {showSubMenuModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+            <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-6">
+              
+              <div className="flex items-center justify-between px-6 py-4 bg-indigo-950 text-white">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-300">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      {editingSubMenuId ? 'Edit Sub-Menu' : 'Tambah Sub-Menu Baru'}
+                    </h3>
+                    <p className="text-[11px] text-indigo-300">
+                      Menu Induk: {portalMenus.find((m) => m.id === targetParentMenuId)?.title || '-'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSubMenuModal(false)}
+                  className="p-1 text-indigo-200 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveSubMenu} className="p-6 space-y-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Judul Sub-Menu *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Form Pengajuan Judul & Pembimbing"
+                    value={subMenuTitle}
+                    onChange={(e) => setSubMenuTitle(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-900/20 focus:border-indigo-900"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Tautan URL / Halaman *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://... atau /halaman/panduan-tesis-2026"
+                    value={subMenuUrl}
+                    onChange={(e) => setSubMenuUrl(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-900/20 focus:border-indigo-900"
+                  />
+                  {customPages.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                      <span className="text-[10px] text-slate-400">Pilih dari Halaman:</span>
+                      {customPages.slice(0, 3).map((cp) => (
+                        <button
+                          key={cp.id}
+                          type="button"
+                          onClick={() => setSubMenuUrl(`/halaman/${cp.slug}`)}
+                          className="text-[10px] bg-slate-100 hover:bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-slate-200"
+                        >
+                          {cp.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Keterangan Singkat (Opsional)</label>
+                  <input
+                    type="text"
+                    placeholder="Deskripsi singkat fungsi sub-menu ini"
+                    value={subMenuDesc}
+                    onChange={(e) => setSubMenuDesc(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-900/20 focus:border-indigo-900"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Ikon (Emoji)</label>
+                    <input
+                      type="text"
+                      placeholder="📌, 📝, 📎"
+                      value={subMenuIcon}
+                      onChange={(e) => setSubMenuIcon(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-center text-base focus:outline-none focus:ring-2 focus:ring-indigo-900/20 focus:border-indigo-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Urutan Tampil</label>
+                    <input
+                      type="number"
+                      value={subMenuOrder}
+                      onChange={(e) => setSubMenuOrder(Number(e.target.value))}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-900/20 focus:border-indigo-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-xs font-bold text-slate-800">Status Sub-Menu Aktif</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={subMenuActive}
+                      onChange={(e) => setSubMenuActive(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowSubMenuModal(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-bold shadow-md transition-colors flex items-center gap-2 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{editingSubMenuId ? 'Simpan Sub-Menu' : 'Tambahkan Sub-Menu'}</span>
                   </button>
                 </div>
               </form>

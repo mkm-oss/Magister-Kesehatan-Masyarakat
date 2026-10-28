@@ -16,6 +16,7 @@ import { DosenPortal } from './components/DosenPortal';
 import { MahasiswaPortal } from './components/MahasiswaPortal';
 import { SimAkreditasiPro } from './components/SimAkreditasiPro';
 import { InitialPortalGateway } from './components/InitialPortalGateway';
+import { CustomPageViewer } from './components/CustomPageViewer';
 
 function MainAppContent() {
   const { activePortalView, setActivePortalView, currentUser } = useApp();
@@ -25,7 +26,7 @@ function MainAppContent() {
   const [isPortalLoginOpen, setIsPortalLoginOpen] = useState(false);
   const [isDriveOpen, setIsDriveOpen] = useState(false);
   const [isSheetsOpen, setIsSheetsOpen] = useState(false);
-  const [loginDefaultRole, setLoginDefaultRole] = useState<'admin' | 'dosen' | 'mahasiswa'>('admin');
+  const [loginDefaultRole, setLoginDefaultRole] = useState<'superadmin' | 'admin' | 'dosen' | 'mahasiswa'>('superadmin');
   const [preselectedPeminatan, setPreselectedPeminatan] = useState('');
 
   const handleOpenRegister = (peminatanName = '') => {
@@ -37,12 +38,16 @@ function MainAppContent() {
     setIsBrochureOpen(true);
   };
 
-  const handleOpenPortalLogin = (role: 'admin' | 'dosen' | 'mahasiswa' = 'admin') => {
+  const handleOpenPortalLogin = (role: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa' = 'superadmin') => {
     setLoginDefaultRole(role);
     setIsPortalLoginOpen(true);
   };
 
-  // Route to specific portal or SIM-Akreditasi PRO if active
+  // Route to specific portal, custom page, or SIM-Akreditasi PRO if active
+  if (activePortalView === 'custom_page') {
+    return <CustomPageViewer onBack={() => setActivePortalView('landing')} />;
+  }
+
   if (activePortalView === 'sim_akreditasi') {
     return <SimAkreditasiPro onBackToPortal={() => setActivePortalView('landing')} />;
   }

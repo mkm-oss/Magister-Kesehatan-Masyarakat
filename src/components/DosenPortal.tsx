@@ -35,6 +35,7 @@ export const DosenPortal: React.FC = () => {
     currentUser,
     logout,
     setActivePortalView,
+    setActivePageSlug,
     portalMenus,
     announcements,
     reminders,
@@ -45,6 +46,17 @@ export const DosenPortal: React.FC = () => {
     addReminder,
     deleteReminder,
   } = useApp();
+
+  const handleOpenMenu = (url?: string) => {
+    if (!url) return;
+    if (url.startsWith('/halaman/')) {
+      const slug = url.replace('/halaman/', '');
+      setActivePageSlug(slug);
+      setActivePortalView('custom_page');
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<
     'overview' | 'directory' | 'announcements' | 'agenda' | 'drive' | 'sheets'
@@ -422,24 +434,51 @@ export const DosenPortal: React.FC = () => {
                           <h4 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-900 transition-colors">
                             {item.title}
                           </h4>
-                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
+                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
                             {item.description}
                           </p>
+
+                          {/* Sub-menu jika ada */}
+                          {item.subMenus && item.subMenus.filter((s) => s.active).length > 0 && (
+                            <div className="mb-3 space-y-1.5 bg-amber-50/50 p-2.5 rounded-lg border border-amber-200/60">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 block">
+                                Sub-Menu & Berkas:
+                              </span>
+                              <div className="space-y-1">
+                                {item.subMenus.filter((s) => s.active).map((sub) => (
+                                  <button
+                                    key={sub.id}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenMenu(sub.url);
+                                    }}
+                                    className="w-full text-left px-2 py-1.5 rounded-md bg-white hover:bg-amber-100 text-slate-800 hover:text-amber-950 border border-slate-200/60 flex items-center justify-between text-xs transition-colors cursor-pointer"
+                                  >
+                                    <span className="flex items-center gap-1.5 truncate">
+                                      <span>{sub.icon || '📌'}</span>
+                                      <span className="font-semibold truncate">{sub.title}</span>
+                                    </span>
+                                    <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">
                             {item.category}
                           </span>
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-bold text-blue-900 hover:text-blue-700 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                          <button
+                            type="button"
+                            onClick={() => handleOpenMenu(item.url)}
+                            className="text-xs font-bold text-blue-900 hover:text-blue-700 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform cursor-pointer"
                           >
-                            <span>Buka Layanan</span>
+                            <span>{item.url?.startsWith('/halaman/') ? 'Buka Halaman' : 'Buka Layanan'}</span>
                             <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
+                          </button>
                         </div>
                       </div>
                     );
@@ -614,24 +653,51 @@ export const DosenPortal: React.FC = () => {
                       <h4 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-900 transition-colors">
                         {item.title}
                       </h4>
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
                         {item.description}
                       </p>
+
+                      {/* Sub-menu jika ada */}
+                      {item.subMenus && item.subMenus.filter((s) => s.active).length > 0 && (
+                        <div className="mb-3 space-y-1.5 bg-amber-50/50 p-2.5 rounded-lg border border-amber-200/60">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 block">
+                            Sub-Menu & Berkas:
+                          </span>
+                          <div className="space-y-1">
+                            {item.subMenus.filter((s) => s.active).map((sub) => (
+                              <button
+                                key={sub.id}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenMenu(sub.url);
+                                }}
+                                className="w-full text-left px-2 py-1.5 rounded-md bg-white hover:bg-amber-100 text-slate-800 hover:text-amber-950 border border-slate-200/60 flex items-center justify-between text-xs transition-colors cursor-pointer"
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <span>{sub.icon || '📌'}</span>
+                                  <span className="font-semibold truncate">{sub.title}</span>
+                                </span>
+                                <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-3 border-t border-slate-200/80 flex items-center justify-between">
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">
                         {item.category}
                       </span>
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-bold text-blue-900 hover:text-blue-700 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                      <button
+                        type="button"
+                        onClick={() => handleOpenMenu(item.url)}
+                        className="text-xs font-bold text-blue-900 hover:text-blue-700 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform cursor-pointer"
                       >
-                        <span>Buka Layanan</span>
+                        <span>{item.url?.startsWith('/halaman/') ? 'Buka Halaman' : 'Buka Layanan'}</span>
                         <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      </button>
                     </div>
                   </div>
                 );
