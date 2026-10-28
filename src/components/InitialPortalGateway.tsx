@@ -14,6 +14,8 @@ import {
   Sparkles,
   Info,
   Award,
+  ExternalLink,
+  FolderSync,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -28,17 +30,7 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
   onOpenRegister,
   onOpenBrochure,
 }) => {
-  const { login, setActivePortalView } = useApp();
-
-  const handleDirectEnter = (role: 'admin' | 'dosen' | 'mahasiswa') => {
-    if (role === 'admin') {
-      login('admin', 'admin.mkm', 'Administrator Pascasarjana MKM');
-    } else if (role === 'dosen') {
-      login('dosen', 'NIDN: 1102047801', 'Dr. Rochmawati, S.KM., M.Kes.');
-    } else {
-      login('mahasiswa', 'NIM: 241021004', 'Ahmad Fauzi, S.KM.');
-    }
-  };
+  const { setActivePortalView } = useApp();
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900 text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 border-b-4 border-amber-400">
@@ -90,14 +82,26 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
               Repository Bukti Digital Cloud, dan Portal Mode Asesor Audit Eksternal.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setActivePortalView('sim_akreditasi')}
-            className="py-3 px-5 rounded-xl font-extrabold text-xs sm:text-sm bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-lg shadow-amber-400/20 flex items-center gap-2 whitespace-nowrap active:scale-[0.98] transition-all shrink-0 cursor-pointer"
-          >
-            <span>Buka SIM-Akreditasi PRO</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <a
+              href="https://drive.google.com/drive/folders/1gviyTRdU96dgYbFBlOQkPeFWfeQvP0Ab?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-3 px-4 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-[0.98] transition-all cursor-pointer"
+              title="Buka Folder Google Drive Utama Bukti Akreditasi"
+            >
+              <FolderSync className="w-4 h-4" />
+              <span>Drive Bukti ↗</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => setActivePortalView('sim_akreditasi')}
+              className="py-3 px-5 rounded-xl font-extrabold text-xs sm:text-sm bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <span>Buka SIM-Akreditasi PRO</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* PROMPT INSTRUKSI PILIHAN MASUK */}
@@ -153,23 +157,24 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons for Mahasiswa */}
+              {/* Action Buttons for Mahasiswa - Wajib Password */}
               <div className="p-6 pt-0 relative z-10 space-y-2">
                 <button
                   type="button"
-                  onClick={() => handleDirectEnter('mahasiswa')}
-                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-500/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                  onClick={() => onOpenPortalLogin('mahasiswa')}
+                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-500/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
                 >
-                  <span>Masuk Portal Mahasiswa</span>
+                  <Lock className="w-4 h-4 text-blue-200" />
+                  <span>Masuk Portal Mahasiswa (Wajib Password)</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => onOpenPortalLogin('mahasiswa')}
-                  className="w-full py-2 text-center text-xs text-blue-300 hover:text-white transition-colors flex items-center justify-center gap-1"
+                  className="w-full py-2 text-center text-xs text-blue-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Lock className="w-3 h-3" />
-                  <span>Login dengan NIM Mahasiswa</span>
+                  <span>Autentikasi NIM & Kata Sandi</span>
                 </button>
               </div>
             </div>
@@ -214,23 +219,24 @@ export const InitialPortalGateway: React.FC<InitialPortalGatewayProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons for Dosen */}
+              {/* Action Buttons for Dosen - Wajib Password */}
               <div className="p-6 pt-0 relative z-10 space-y-2">
                 <button
                   type="button"
-                  onClick={() => handleDirectEnter('dosen')}
-                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 hover:shadow-amber-400/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                  onClick={() => onOpenPortalLogin('dosen')}
+                  className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 hover:shadow-amber-400/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
                 >
-                  <span>Masuk Portal Dosen</span>
+                  <Lock className="w-4 h-4 text-slate-950" />
+                  <span>Masuk Portal Dosen (Wajib Password)</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => onOpenPortalLogin('dosen')}
-                  className="w-full py-2 text-center text-xs text-amber-300 hover:text-white transition-colors flex items-center justify-center gap-1"
+                  className="w-full py-2 text-center text-xs text-amber-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Lock className="w-3 h-3" />
-                  <span>Login dengan NIDN Dosen</span>
+                  <span>Autentikasi NIDN & Kata Sandi</span>
                 </button>
               </div>
             </div>

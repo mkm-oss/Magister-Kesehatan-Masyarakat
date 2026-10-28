@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Award,
   CheckCircle2,
@@ -47,6 +47,10 @@ import {
   ArrowLeft,
   RefreshCw,
   Clock,
+  Printer,
+  HelpCircle,
+  FileCheck,
+  Info,
 } from 'lucide-react';
 import {
   Radar,
@@ -65,67 +69,30 @@ import {
   PieChart,
   Pie,
   Cell,
-  AreaChart,
-  Area,
 } from 'recharts';
+import {
+  LAMPTKES_CRITERIA,
+  LAMPTKES_MAIN_ELEMENTS,
+  DEFAULT_LAMPTKES_EVIDENCES,
+  CriterionLamptkes,
+  SubCriterion,
+  MainElement,
+  SupportingDocTemplate,
+  DigitalEvidenceItem,
+  ElementLedAnswer,
+} from '../data/lamptkes2025Data';
 
-// ==========================================
-// DATA STRUCTURES & INTERFACES
-// ==========================================
+// Default Master Google Drive URL
+export const GDRIVE_AKREDITASI_FOLDER_URL =
+  'https://drive.google.com/drive/folders/1gviyTRdU96dgYbFBlOQkPeFWfeQvP0Ab?usp=sharing';
 
-export interface SubIndicator {
-  id: string;
-  code: string;
-  title: string;
-  weight: number; // percentage of criteria
-  desc: string;
-  score: number; // 1.0 - 4.0
-  status: 'Lengkap' | 'Review' | 'Draft' | 'Belum Lengkap';
-  ledStatus: 'Final' | 'Review' | 'Draft';
-  lkpsStatus: 'Valid' | 'Perlu Update' | 'Belum Diisi';
-  evidenceCount: number;
-  evidenceTarget: number;
-  pic: string;
-  notes?: string;
-  assessorScore?: number;
-  assessorNotes?: string;
-  assessorStatus?: 'Disetujui' | 'Perlu Perbaikan' | 'Belum Dinilai';
-}
-
-export interface Criterion {
-  id: number;
-  name: string;
-  shortName: string;
-  weight: number; // percentage of 100
-  code: string;
-  iconName: string;
-  color: string;
-  subIndicators: SubIndicator[];
-  syaratPerlu?: boolean;
-  syaratPerluThreshold?: number;
-}
-
-export interface DigitalEvidence {
-  id: string;
-  code: string;
-  title: string;
-  criterionId: number;
-  indicatorCode: string;
-  fileType: 'SK' | 'Pedoman/SOP' | 'Laporan' | 'MoA/MoU' | 'Sertifikat' | 'Borang LKPS' | 'Naskah LED' | 'Lainnya';
-  cloudProvider: 'Google Drive' | 'OneDrive' | 'Dropbox' | 'Simulasi Upload';
-  cloudUrl: string;
-  fileSize: string;
-  uploadDate: string;
-  uploader: string;
-  verified: boolean;
-}
-
+// Discussion comment and audit trail interfaces
 export interface DiscussionComment {
   id: string;
   authorName: string;
   authorRole: 'Admin Tim Akreditasi' | 'Dosen Tim Penyusun' | 'Asesor Audit' | 'Perwakilan Mahasiswa';
   criterionId: number;
-  indicatorCode?: string;
+  elementCode?: string;
   text: string;
   timestamp: string;
   urgency: 'Normal' | 'Penting' | 'Mendesak';
@@ -134,738 +101,231 @@ export interface DiscussionComment {
 
 export interface AuditTrailLog {
   id: string;
-  action: 'Update Skor' | 'Unggah Berkas' | 'Verifikasi Asesor' | 'Update Dokumen' | 'Komentar';
+  action: 'Update Narasi LED' | 'Update Skor' | 'Unggah Berkas' | 'Verifikasi Asesor' | 'Update Dokumen' | 'Komentar';
   description: string;
   actor: string;
   role: string;
   timestamp: string;
-  criterionCode?: string;
+  elementCode?: string;
+  criterionNumber?: number;
 }
-
-// ==========================================
-// INITIAL REALISTIC DATA FOR S2 MKM
-// ==========================================
-
-const INITIAL_CRITERIA: Criterion[] = [
-  {
-    id: 1,
-    code: 'C1',
-    name: 'Visi, Misi, Tujuan, dan Strategi',
-    shortName: 'VMTS',
-    weight: 5.0,
-    iconName: 'Building2',
-    color: '#054DA0',
-    subIndicators: [
-      {
-        id: 'c1-1',
-        code: 'C.1.1',
-        title: 'Keselarasan VMTS UPPS dan Program Studi MKM',
-        weight: 50,
-        desc: 'Kejelasan, kerealistikan, dan keterkaitan VMTS fokus kesehatan wilayah lahan basah tropis.',
-        score: 3.85,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 6,
-        evidenceTarget: 6,
-        pic: 'Dr. Rochmawati, S.KM., M.Kes.',
-        assessorScore: 3.80,
-        assessorNotes: 'VMTS telah disusun sangat partisipatif melibatkan dinkes dan alumni.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c1-2',
-        code: 'C.1.2',
-        title: 'Strategi Pencapaian & Indikator Kinerja Utama (IKU/IKT)',
-        weight: 50,
-        desc: 'Peta jalan pencapaian sasaran strategis, baseline, target terukur, dan alokasi sumber daya.',
-        score: 3.70,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 5,
-        evidenceTarget: 5,
-        pic: 'Admin Tim Akreditasi',
-        assessorScore: 3.75,
-        assessorNotes: 'Indikator IKU/IKT telah sesuai Permendikbudristek No. 53/2023.',
-        assessorStatus: 'Disetujui',
-      },
-    ],
-  },
-  {
-    id: 2,
-    code: 'C2',
-    name: 'Tata Pamong, Tata Kelola, dan Kerjasama',
-    shortName: 'Tata Kelola & Kerjasama',
-    weight: 7.5,
-    iconName: 'ShieldCheck',
-    color: '#0E9549',
-    subIndicators: [
-      {
-        id: 'c2-1',
-        code: 'C.2.1',
-        title: 'Sistem Tata Pamong & Kepemimpinan Publik',
-        weight: 35,
-        desc: 'Struktur organisasi, pembagian tugas fungsional, dan kepemimpinan operasional prodi.',
-        score: 3.80,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 7,
-        evidenceTarget: 7,
-        pic: 'Dr. Rochmawati, S.KM., M.Kes.',
-        assessorScore: 3.70,
-        assessorNotes: 'Struktur tata pamong sangat kredibel dan akuntabel.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c2-2',
-        code: 'C.2.2',
-        title: 'Sistem Penjaminan Mutu Internal (SPMI) Siklus PPEPP',
-        weight: 35,
-        desc: 'Keterlaksanaan siklus Penetapan, Pelaksanaan, Evaluasi, Pengendalian, dan Peningkatan mutu.',
-        score: 3.75,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 8,
-        evidenceTarget: 8,
-        pic: 'Gugus Kendali Mutu FIKPsi',
-        assessorScore: 3.70,
-        assessorNotes: 'Laporan Audit Mutu Internal (AMI) 3 tahun terakhir lengkap terarsipkan.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c2-3',
-        code: 'C.2.3',
-        title: 'Kerjasama Tridharma (Nasional & Internasional)',
-        weight: 30,
-        desc: 'Kerjasama bidang pendidikan, riset, dan PkM dengan Dinas Kesehatan, Balai Litbangkes, dan Industri.',
-        score: 3.65,
-        status: 'Review',
-        ledStatus: 'Review',
-        lkpsStatus: 'Valid',
-        evidenceCount: 11,
-        evidenceTarget: 12,
-        pic: 'Unit Kerjasama FIKPsi',
-        assessorScore: 3.60,
-        assessorNotes: 'Perlu menambahkan laporan realisasi implementasi (IA) untuk MoU internasional.',
-        assessorStatus: 'Perlu Perbaikan',
-      },
-    ],
-  },
-  {
-    id: 3,
-    code: 'C3',
-    name: 'Mahasiswa',
-    shortName: 'Mahasiswa',
-    weight: 7.5,
-    iconName: 'Users',
-    color: '#0891B2',
-    subIndicators: [
-      {
-        id: 'c3-1',
-        code: 'C.3.1',
-        title: 'Sistem Seleksi PMB & Rasio Keketatan Pendaftar',
-        weight: 50,
-        desc: 'Efektivitas sistem pendaftaran daring, wawancara akademik, dan seleksi calon mahasiswa magister.',
-        score: 3.70,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 6,
-        evidenceTarget: 6,
-        pic: 'Panitia PMB MKM',
-        assessorScore: 3.70,
-        assessorNotes: 'Pendaftar meningkat 24% dari 3 tahun sebelumnya.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c3-2',
-        code: 'C.3.2',
-        title: 'Layanan Pembinaan Minat, Karir, & Bimbingan Tesis',
-        weight: 50,
-        desc: 'Akses konseling penulisan tesis, pelatihan penulisan artikel ilmiah Scopus, dan pembinaan softskill.',
-        score: 3.80,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 5,
-        evidenceTarget: 5,
-        pic: 'Admin Kemahasiswaan',
-        assessorScore: 3.80,
-        assessorNotes: 'Layanan bimbingan tesis online melalui SIMPATI berjalan efektif.',
-        assessorStatus: 'Disetujui',
-      },
-    ],
-  },
-  {
-    id: 4,
-    code: 'C4',
-    name: 'Sumber Daya Manusia (SDM)',
-    shortName: 'SDM Dosen & Tendik',
-    weight: 15.0,
-    iconName: 'GraduationCap',
-    color: '#D97706',
-    syaratPerlu: true,
-    syaratPerluThreshold: 3.5,
-    subIndicators: [
-      {
-        id: 'c4-1',
-        code: 'C.4.1',
-        title: 'Kualifikasi Akademik DTPS Bergelar Doktor (S3)',
-        weight: 35,
-        desc: 'Persentase Dosen Tetap berpendidikan S3 di bidang Kesehatan Masyarakat dan rumpun relevan.',
-        score: 3.85,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 9,
-        evidenceTarget: 9,
-        pic: 'Ketua Program Studi MKM',
-        assessorScore: 3.85,
-        assessorNotes: 'Sebanyak 68% DTPS telah bergelar Doktor dari kampus terkemuka.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c4-2',
-        code: 'C.4.2',
-        title: 'Jabatan Akademik DTPS (Guru Besar & Lektor Kepala)',
-        weight: 35,
-        desc: 'Rasio dosen berkualifikasi Lektor Kepala dan Guru Besar dalam pembimbingan tesis.',
-        score: 3.75,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 7,
-        evidenceTarget: 7,
-        pic: 'Bagian Kepegawaian UM Pontianak',
-        assessorScore: 3.70,
-        assessorNotes: 'Kecukupan jabatan fungsional sangat baik memenuhi syarat perlu unggul.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c4-3',
-        code: 'C.4.3',
-        title: 'Beban Kerja Dosen (BKD) & Rekognisi Kepakaran',
-        weight: 30,
-        desc: 'Kesesuaian beban mengajar, membimbing, dan rekognisi sebagai narasumber atau reviewer internasional.',
-        score: 3.70,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 6,
-        evidenceTarget: 6,
-        pic: 'Admin Tim Akreditasi',
-        assessorScore: 3.65,
-        assessorNotes: 'Rekognisi kepakaran dosen di bidang epidemiologi dan K3 sangat menonjol.',
-        assessorStatus: 'Disetujui',
-      },
-    ],
-  },
-  {
-    id: 5,
-    code: 'C5',
-    name: 'Keuangan, Sarana, dan Prasarana',
-    shortName: 'Keuangan & Sarpras',
-    weight: 10.0,
-    iconName: 'DollarSign',
-    color: '#2563EB',
-    subIndicators: [
-      {
-        id: 'c5-1',
-        code: 'C.5.1',
-        title: 'Kecukupan & Realisasi Anggaran Operasional & Riset',
-        weight: 50,
-        desc: 'Biaya operasional pembelajaran per mahasiswa, alokasi dana penelitian dosen dan mahasiswa.',
-        score: 3.65,
-        status: 'Review',
-        ledStatus: 'Review',
-        lkpsStatus: 'Valid',
-        evidenceCount: 5,
-        evidenceTarget: 6,
-        pic: 'Wakil Rektor II / Keuangan FIKPsi',
-        assessorScore: 3.60,
-        assessorNotes: 'Anggaran stabil, disarankan menambah alokasi hibah publikasi Q1/Q2.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c5-2',
-        code: 'C.5.2',
-        title: 'Sarana Laboratorium Kesmas, Smart Classroom, & E-Library',
-        weight: 50,
-        desc: 'Laboratorium epidemiologi terapan, akses database Scopus, ProQuest, dan smart interactive panel.',
-        score: 3.80,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 8,
-        evidenceTarget: 8,
-        pic: 'Kepala Lab & Perpustakaan',
-        assessorScore: 3.80,
-        assessorNotes: 'Sarana smart classroom dan perpustakaan digital sangat memadai.',
-        assessorStatus: 'Disetujui',
-      },
-    ],
-  },
-  {
-    id: 6,
-    code: 'C6',
-    name: 'Pendidikan',
-    shortName: 'Kurikulum & Pembelajaran',
-    weight: 17.5,
-    iconName: 'BookOpen',
-    color: '#7C3AED',
-    syaratPerlu: true,
-    syaratPerluThreshold: 3.5,
-    subIndicators: [
-      {
-        id: 'c6-1',
-        code: 'C.6.1',
-        title: 'Kurikulum MKM Berbasis Outcome-Based Education (OBE)',
-        weight: 35,
-        desc: 'Kesesuaian CPL dengan standar AIPTKMI, kedalaman 4 peminatan studi, dan silabus RPS modern.',
-        score: 3.90,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 10,
-        evidenceTarget: 10,
-        pic: 'Tim Pengembang Kurikulum MKM',
-        assessorScore: 3.90,
-        assessorNotes: 'Peta kurikulum OBE telah terstruktur sangat rapi dan relevan dengan industri.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c6-2',
-        code: 'C.6.2',
-        title: 'Integrasi Hasil Riset & PkM dalam Bahan Ajar',
-        weight: 30,
-        desc: 'Pemanfaatan publikasi riset dosen dan mahasiswa sebagai modul rujukan dalam perkuliahan.',
-        score: 3.75,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 7,
-        evidenceTarget: 7,
-        pic: 'Dr. Rochmawati, S.KM., M.Kes.',
-        assessorScore: 3.75,
-        assessorNotes: 'Integrasi riset lahan basah terlihat nyata di modul epidemiologi.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c6-3',
-        code: 'C.6.3',
-        title: 'Sistem Pembelajaran Hybrid & Monitoring Bimbingan Tesis',
-        weight: 35,
-        desc: 'Platform Moodle LMS, monitoring logbook bimbingan tesis, dan kepuasan mahasiswa (EDOM).',
-        score: 3.85,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 8,
-        evidenceTarget: 8,
-        pic: 'Gugus Kendali Mutu FIKPsi',
-        assessorScore: 3.80,
-        assessorNotes: 'Sistem logbook digital tesis memudahkan pemantauan ketepatan masa studi.',
-        assessorStatus: 'Disetujui',
-      },
-    ],
-  },
-  {
-    id: 7,
-    code: 'C7',
-    name: 'Penelitian',
-    shortName: 'Penelitian',
-    weight: 12.5,
-    iconName: 'Activity',
-    color: '#EA580C',
-    subIndicators: [
-      {
-        id: 'c7-1',
-        code: 'C.7.1',
-        title: 'Roadmap Riset Kesmas Wilayah Lahan Basah Tropis',
-        weight: 40,
-        desc: 'Kesesuaian tema penelitian dosen dengan keunggulan spesifik wilayah Kalimantan Barat.',
-        score: 3.85,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 6,
-        evidenceTarget: 6,
-        pic: 'Ketua LPPM / Koordinator Riset',
-        assessorScore: 3.80,
-        assessorNotes: 'Roadmap riset spesifik dan memiliki keunikan pembeda nasional.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c7-2',
-        code: 'C.7.2',
-        title: 'Keterlibatan Mahasiswa Tesis dalam Penelitian Dosen',
-        weight: 60,
-        desc: 'Rasio mahasiswa magister yang menyusun tesis berpayung riset hibah dosen (Kemendikbud/BRIN/Internal).',
-        score: 3.75,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 8,
-        evidenceTarget: 8,
-        pic: 'Dr. Rochmawati, S.KM., M.Kes.',
-        assessorScore: 3.70,
-        assessorNotes: 'Kolaborasi riset payung dosen-mahasiswa berjalan sangat baik.',
-        assessorStatus: 'Disetujui',
-      },
-    ],
-  },
-  {
-    id: 8,
-    code: 'C8',
-    name: 'Pengabdian kepada Masyarakat (PkM)',
-    shortName: 'Pengabdian (PkM)',
-    weight: 7.5,
-    iconName: 'HeartHandshake',
-    color: '#059669',
-    subIndicators: [
-      {
-        id: 'c8-1',
-        code: 'C.8.1',
-        title: 'Roadmap PkM & Kemitraan Komunitas Pesisir/Gambut',
-        weight: 50,
-        desc: 'Penerapan kepakaran kesmas untuk penanganan stunting, sanitasi total, dan kesehatan petani sawit.',
-        score: 3.80,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 6,
-        evidenceTarget: 6,
-        pic: 'Koordinator PkM FIKPsi',
-        assessorScore: 3.80,
-        assessorNotes: 'Dampak program PkM diakui luas oleh Pemda Sambas & Kubu Raya.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c8-2',
-        code: 'C.8.2',
-        title: 'Keterlibatan Mahasiswa Magister dalam Program PkM',
-        weight: 50,
-        desc: 'Partisipasi mahasiswa dalam advokasi kebijakan kesehatan dan intervensi perubahan perilaku.',
-        score: 3.70,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 5,
-        evidenceTarget: 5,
-        pic: 'Admin Tim Akreditasi',
-        assessorScore: 3.70,
-        assessorNotes: 'Keterlibatan mahasiswa mencapai 85% dari total populasi.',
-        assessorStatus: 'Disetujui',
-      },
-    ],
-  },
-  {
-    id: 9,
-    code: 'C9',
-    name: 'Luaran dan Capaian Tridharma',
-    shortName: 'Luaran & Publikasi',
-    weight: 17.5,
-    iconName: 'Award',
-    color: '#BE185D',
-    syaratPerlu: true,
-    syaratPerluThreshold: 3.5,
-    subIndicators: [
-      {
-        id: 'c9-1',
-        code: 'C.9.1',
-        title: 'Rata-rata IPK Lulusan & Ketepatan Masa Studi Tesis',
-        weight: 35,
-        desc: 'Rata-rata IPK lulusan (target ≥ 3.75) dan persentase kelulusan tepat waktu dalam 3-4 semester.',
-        score: 3.80,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 7,
-        evidenceTarget: 7,
-        pic: 'Admin Akademik & SIAKAD',
-        assessorScore: 3.80,
-        assessorNotes: 'Rata-rata IPK lulusan 3.82 dengan masa studi rata-rata 3.6 semester.',
-        assessorStatus: 'Disetujui',
-      },
-      {
-        id: 'c9-2',
-        code: 'C.9.2',
-        title: 'Publikasi Ilmiah Mahasiswa & Dosen (Scopus & SINTA 1-2)',
-        weight: 40,
-        desc: 'Jumlah artikel ilmiah tesis yang dipublikasikan di jurnal internasional bereputasi dan nasional terakreditasi.',
-        score: 3.70,
-        status: 'Review',
-        ledStatus: 'Review',
-        lkpsStatus: 'Valid',
-        evidenceCount: 14,
-        evidenceTarget: 15,
-        pic: 'Unit Publikasi & Jurnal MKM',
-        assessorScore: 3.65,
-        assessorNotes: 'Produktivitas publikasi sudah sangat tinggi, lengkapi bukti korespondensi naskah.',
-        assessorStatus: 'Perlu Perbaikan',
-      },
-      {
-        id: 'c9-3',
-        code: 'C.9.3',
-        title: 'HKI, Paten, & Hasil Tracer Study Kepuasan Pengguna',
-        weight: 25,
-        desc: 'Sertifikat Hak Cipta modul/buku kesmas dan survei kepuasan pimpinan instansi tempat alumni bekerja.',
-        score: 3.75,
-        status: 'Lengkap',
-        ledStatus: 'Final',
-        lkpsStatus: 'Valid',
-        evidenceCount: 8,
-        evidenceTarget: 8,
-        pic: 'Unit Tracer Study FIKPsi',
-        assessorScore: 3.75,
-        assessorNotes: 'Pengguna lulusan (Dinkes & RS) menyatakan sangat puas atas kompetensi alumni.',
-        assessorStatus: 'Disetujui',
-      },
-    ],
-  },
-];
-
-const INITIAL_EVIDENCES: DigitalEvidence[] = [
-  {
-    id: 'ev-1',
-    code: 'BKT-C1-01',
-    title: 'SK Rektor Penetapan VMTS Magister Kesehatan Masyarakat UM Pontianak',
-    criterionId: 1,
-    indicatorCode: 'C.1.1',
-    fileType: 'SK',
-    cloudProvider: 'Google Drive',
-    cloudUrl: 'https://drive.google.com/drive/folders/mkm-akreditasi-c1',
-    fileSize: '2.4 MB (PDF)',
-    uploadDate: '2026-10-15',
-    uploader: 'Admin Tim Akreditasi',
-    verified: true,
-  },
-  {
-    id: 'ev-2',
-    code: 'BKT-C1-02',
-    title: 'Notulensi & Daftar Hadir Lokakarya Penyusunan VMTS bersama Stakeholder & Dinkes',
-    criterionId: 1,
-    indicatorCode: 'C.1.1',
-    fileType: 'Laporan',
-    cloudProvider: 'Google Drive',
-    cloudUrl: 'https://drive.google.com/file/d/vmts-lokakarya-notula',
-    fileSize: '4.8 MB (PDF)',
-    uploadDate: '2026-10-16',
-    uploader: 'Dr. Rochmawati, S.KM., M.Kes.',
-    verified: true,
-  },
-  {
-    id: 'ev-3',
-    code: 'BKT-C2-01',
-    title: 'Manual Mutu & Standar SPMI Siklus PPEPP FIKPsi UM Pontianak',
-    criterionId: 2,
-    indicatorCode: 'C.2.2',
-    fileType: 'Pedoman/SOP',
-    cloudProvider: 'OneDrive',
-    cloudUrl: 'https://onedrive.live.com/?id=spmi-manual-mutu-mkm',
-    fileSize: '5.1 MB (PDF)',
-    uploadDate: '2026-10-18',
-    uploader: 'Gugus Kendali Mutu',
-    verified: true,
-  },
-  {
-    id: 'ev-4',
-    code: 'BKT-C2-02',
-    title: 'Naskah MoA Kerjasama Riset & Magang Tesis dengan Dinas Kesehatan Prov. Kalbar',
-    criterionId: 2,
-    indicatorCode: 'C.2.3',
-    fileType: 'MoA/MoU',
-    cloudProvider: 'Google Drive',
-    cloudUrl: 'https://drive.google.com/drive/folders/moa-dinkes-kalbar',
-    fileSize: '3.6 MB (PDF)',
-    uploadDate: '2026-10-19',
-    uploader: 'Unit Kerjasama FIKPsi',
-    verified: false,
-  },
-  {
-    id: 'ev-5',
-    code: 'BKT-C4-01',
-    title: 'Portofolio Ijazah & Rekap Kualifikasi S3 DTPS Program Studi MKM',
-    criterionId: 4,
-    indicatorCode: 'C.4.1',
-    fileType: 'Sertifikat',
-    cloudProvider: 'Google Drive',
-    cloudUrl: 'https://drive.google.com/drive/folders/ijazah-s3-dtps',
-    fileSize: '12.8 MB (PDF)',
-    uploadDate: '2026-10-20',
-    uploader: 'Admin Tim Akreditasi',
-    verified: true,
-  },
-  {
-    id: 'ev-6',
-    code: 'BKT-C6-01',
-    title: 'Dokumen Kurikulum OBE Lengkap & Peta Capaian Pembelajaran Lulusan (CPL)',
-    criterionId: 6,
-    indicatorCode: 'C.6.1',
-    fileType: 'Pedoman/SOP',
-    cloudProvider: 'Google Drive',
-    cloudUrl: 'https://drive.google.com/drive/folders/kurikulum-obe-mkm',
-    fileSize: '8.4 MB (PDF)',
-    uploadDate: '2026-10-21',
-    uploader: 'Tim Pengembang Kurikulum',
-    verified: true,
-  },
-  {
-    id: 'ev-7',
-    code: 'BKT-C6-02',
-    title: 'Buku Panduan Penulisan & Logbook Digital Bimbingan Tesis Pascasarjana',
-    criterionId: 6,
-    indicatorCode: 'C.6.3',
-    fileType: 'Pedoman/SOP',
-    cloudProvider: 'OneDrive',
-    cloudUrl: 'https://onedrive.live.com/?id=panduan-tesis-mkm',
-    fileSize: '3.9 MB (PDF)',
-    uploadDate: '2026-10-22',
-    uploader: 'Dr. Rochmawati, S.KM., M.Kes.',
-    verified: true,
-  },
-  {
-    id: 'ev-8',
-    code: 'BKT-C9-01',
-    title: 'Kompilasi Artikel Publikasi Ilmiah Mahasiswa Magister di Jurnal Scopus & SINTA',
-    criterionId: 9,
-    indicatorCode: 'C.9.2',
-    fileType: 'Laporan',
-    cloudProvider: 'Google Drive',
-    cloudUrl: 'https://drive.google.com/drive/folders/publikasi-scopus-mhs',
-    fileSize: '16.5 MB (PDF)',
-    uploadDate: '2026-10-24',
-    uploader: 'Unit Publikasi MKM',
-    verified: false,
-  },
-];
 
 const INITIAL_COMMENTS: DiscussionComment[] = [
   {
     id: 'comm-1',
     authorName: 'Dr. Rochmawati, S.KM., M.Kes.',
     authorRole: 'Dosen Tim Penyusun',
-    criterionId: 6,
-    indicatorCode: 'C.6.1',
-    text: 'RPS untuk peminatan K3 Industri dan Epidemiologi Tropis sudah diselaraskan dengan standar AIPTKMI terbaru. Mohon tim LKPS memasukkan matriks CPL ke tabel 5.a.',
-    timestamp: '2026-10-25 10:30',
+    criterionId: 1,
+    elementCode: '1.1.2',
+    text: 'Bukti berita acara FGD perumusan VMTS bersama Dinkes Kalbar dan PERSAKMI sudah dimasukkan ke Drive Kriteria 1. Mohon dicek kembali naskahnya.',
+    timestamp: '2026-10-27 09:30',
     urgency: 'Penting',
     avatarBg: 'bg-blue-600',
   },
   {
     id: 'comm-2',
-    authorName: 'Dr. Ir. Asesor Audit Eksternal, M.Kes.',
+    authorName: 'Prof. Dr. Ir. H. Sudirman, M.Kes.',
     authorRole: 'Asesor Audit',
     criterionId: 2,
-    indicatorCode: 'C.2.3',
-    text: 'Pada Kriteria 2 (C.2.3), bukti kerjasama internasional perlu dilengkapi bukti luaran riil (joint research / visiting professor). Mohon segera diunggah.',
-    timestamp: '2026-10-25 14:15',
-    urgency: 'Mendesak',
-    avatarBg: 'bg-amber-600',
+    elementCode: '2.1.1',
+    text: 'Rumusan CPL Magister MKM sudah sangat baik mengakomodasi KKNI Level 8 dan keunggulan lahan basah tropis. Pastikan tracer study angkatan pertama disajikan lengkap.',
+    timestamp: '2026-10-27 10:15',
+    urgency: 'Normal',
+    avatarBg: 'bg-emerald-600',
   },
   {
     id: 'comm-3',
     authorName: 'Admin Tim Akreditasi',
     authorRole: 'Admin Tim Akreditasi',
-    criterionId: 2,
-    indicatorCode: 'C.2.3',
-    text: 'Siap Prof. Bukti korespondensi joint lecture dengan universitas mitra di Malaysia sedang disiapkan oleh bagian Urusan Internasional.',
-    timestamp: '2026-10-25 16:45',
+    criterionId: 5,
+    elementCode: '5.5.3',
+    text: 'Publikasi internasional bereputasi DTPS MKM bertambah 4 artikel Scopus Q1-Q2 di tahun 2024. Repositori bukti sudah diperbarui.',
+    timestamp: '2026-10-26 15:20',
     urgency: 'Normal',
-    avatarBg: 'bg-emerald-600',
-  },
-  {
-    id: 'comm-4',
-    authorName: 'Ahmad Fauzi, S.KM.',
-    authorRole: 'Perwakilan Mahasiswa',
-    criterionId: 3,
-    indicatorCode: 'C.3.2',
-    text: 'Layanan bimbingan tesis SIMPATI sudah kami rasakan sangat responsif. Umpan balik dosen pembimbing dapat termonitor secara real-time.',
-    timestamp: '2026-10-26 09:20',
-    urgency: 'Normal',
-    avatarBg: 'bg-purple-600',
+    avatarBg: 'bg-indigo-600',
   },
 ];
 
 const INITIAL_AUDIT_LOGS: AuditTrailLog[] = [
   {
     id: 'log-1',
-    action: 'Verifikasi Asesor',
-    description: 'Asesor menyetujui penilaian Kriteria 1 (VMTS) dengan skor 3.78.',
-    actor: 'Dr. Ir. Asesor Audit Eksternal, M.Kes.',
-    role: 'Asesor Audit',
-    timestamp: '2026-10-26 15:30',
-    criterionCode: 'C1',
+    action: 'Update Narasi LED',
+    description: 'Narasi Elemen 2.1.3 (Kompetensi Abad 21 dan Evidence-Based Public Health) diperbarui ke versi 2.1.',
+    actor: 'Dr. Rochmawati, S.KM., M.Kes.',
+    role: 'Dosen Tim Penyusun',
+    timestamp: '2026-10-27 11:20',
+    elementCode: '2.1.3',
+    criterionNumber: 2,
   },
   {
     id: 'log-2',
-    action: 'Unggah Berkas',
-    description: 'Menambahkan bukti MoA Kerjasama Dinkes Kalbar (BKT-C2-02) via Google Drive.',
-    actor: 'Unit Kerjasama FIKPsi',
-    role: 'Admin Tim Akreditasi',
-    timestamp: '2026-10-26 14:10',
-    criterionCode: 'C2',
+    action: 'Verifikasi Asesor',
+    description: 'Asesor memverifikasi Elemen 1.1.1 dengan skor 3.90 (Sangat Sesuai).',
+    actor: 'Prof. Dr. Asesor LAM-PTKes',
+    role: 'Asesor Audit',
+    timestamp: '2026-10-27 10:45',
+    elementCode: '1.1.1',
+    criterionNumber: 1,
   },
   {
     id: 'log-3',
-    action: 'Update Skor',
-    description: 'Simulasi nilai Kriteria 6 (Pendidikan) diperbarui dari 3.80 menjadi 3.85.',
-    actor: 'Dr. Rochmawati, S.KM., M.Kes.',
-    role: 'Dosen Tim Penyusun',
-    timestamp: '2026-10-26 11:45',
-    criterionCode: 'C6',
-  },
-  {
-    id: 'log-4',
-    action: 'Update Dokumen',
-    description: 'Status dokumen LKPS Kriteria 4 (SDM) diverifikasi Valid oleh Tim Penjamin Mutu.',
-    actor: 'Gugus Kendali Mutu',
+    action: 'Unggah Berkas',
+    description: 'Dokumen BUKTI-K5-02 (Roadmap Riset Lahan Basah Tropis) ditautkan ke folder Google Drive.',
+    actor: 'Admin Akreditasi',
     role: 'Admin Tim Akreditasi',
-    timestamp: '2026-10-25 17:00',
-    criterionCode: 'C4',
+    timestamp: '2026-10-26 14:10',
+    criterionNumber: 5,
   },
 ];
 
-// ==========================================
-// COMPONENT PROPS
-// ==========================================
+// Helper to generate starter draft answers for all 121 elements
+const generateDefaultAnswers = (): { [code: string]: ElementLedAnswer } => {
+  const result: { [code: string]: ElementLedAnswer } = {};
+
+  LAMPTKES_MAIN_ELEMENTS.forEach((el, index) => {
+    // Generate starter narrative based on element context
+    const initialChecked: { [order: number]: boolean } = {};
+    el.complianceItems.forEach((ci) => {
+      // Default to checked for most to show high readiness
+      initialChecked[ci.order] = true;
+    });
+
+    // Realistic baseline score between 3.65 and 3.95
+    const baseScore = Number((3.65 + ((index % 5) * 0.06)).toFixed(2));
+
+    let sampleNarrative = `Program Studi Magister Kesehatan Masyarakat (S2 MKM) FIKPsi Universitas Muhammadiyah Pontianak telah memenuhi elemen ${el.code} secara terencana dan konsisten. `;
+    
+    if (el.criterionId === 1) {
+      sampleNarrative += `Perumusan dan pelaksanaan Visi, Misi, Tujuan, dan Strategi (VMTS) berakar kuat pada nilai keislaman Muhammadiyah dan keunggulan ekologi kesehatan wilayah lahan basah tropis, serta disahkan melalui SK Dekan dan Surat Keputusan Rektor. Partisipasi seluruh pemangku kepentingan (Dinas Kesehatan Prov Kalbar, Rumah Sakit Mitra, IAKMI, dan alumni) terdokumentasi dalam notula serta berita acara resmi.`;
+    } else if (el.criterionId === 2) {
+      sampleNarrative += `Kurikulum S2 MKM disusun berlandaskan Outcome-Based Education (OBE) dan Standar Nasional Pendidikan Tinggi jenjang KKNI Level 8 (beban 38 SKS). Mata kuliah inti, peminatan (AKK, Epidemiologi, K3, Promkes), serta penulisan tesis memadukan kajian evidence-based public health mutakhir dengan rujukan jurnal internasional bereputasi dan modul lapangan terintegrasi.`;
+    } else if (el.criterionId === 3) {
+      sampleNarrative += `Sistem penilaian menerapkan prinsip transparansi, otentisitas, dan akuntabilitas melalui penilaian formatif, rubrik komprehensif ujian tesis, dan pengecekan uji similaritas Turnitin (ambang batas maksimal 20%). Mekanisme banding nilai dan evaluasi berkala distribusi mutu nilai terkelola dalam SIAKAD terpadu.`;
+    } else if (el.criterionId === 4) {
+      sampleNarrative += `Proses seleksi penerimaan mahasiswa baru (Maba) berjalan kompetitif dan inklusif dengan tes potensi akademik, TOEFL, wawancara portofolio, serta matrikulasi bagi lulusan non-kesehatan masyarakat. Layanan bimbingan akademik terstruktur, student lounge pascasarjana, dan satgas PPKS menjamin lingkungan belajar yang aman dan kondusif.`;
+    } else if (el.criterionId === 5) {
+      sampleNarrative += `Seluruh Dosen Tetap Program Studi (DTPS) berkualifikasi Doktor (S3) bidang kesehatan masyarakat dengan jabatan Lektor Kepala hingga Guru Besar. Peta jalan penelitian dan pengabdian kepada masyarakat (PkM) difokuskan pada penanggulangan masalah kesehatan lahan basah tropis dengan produktivitas publikasi Scopus/WoS dan perolehan Hak Cipta terdaftar.`;
+    } else if (el.criterionId === 6) {
+      sampleNarrative += `Fasilitas fisik meliputi ruang kuliah multimedia, Laboratorium Kesehatan Lingkungan dan K3 terstandarisasi, akses penuh ke pangkalan data e-journal internasional (ScienceDirect, SpringerLink, ProQuest), serta lisensi software statistik (SPSS, Epi-Info, NVivo). Tata kelola keuangan memperoleh predikat Wajar Tanpa Pengecualian (WTP).`;
+    } else if (el.criterionId === 7) {
+      sampleNarrative += `Sistem Penjaminan Mutu Internal (SPMI) terlaksana secara terstruktur melalui siklus PPEPP (Penetapan, Pelaksanaan, Evaluasi, Pengendalian, dan Peningkatan). Audit Mutu Internal (AMI) berkala dan Rapat Tinjauan Manajemen (RTM) menghasilkan peningkatan target standar mutu secara berkelanjutan.`;
+    } else {
+      sampleNarrative += `Tata kelola UPPS dan Program Studi mencerminkan Good University Governance yang transparan, akuntabel, dan partisipatif. Layanan administrasi terdigitalisasi dalam enterprise campus system dengan kerja sama tridarma aktif bersama instansi kesehatan pemerintah dan mitra internasional.`;
+    }
+
+    result[el.code] = {
+      elementCode: el.code,
+      narrative: sampleNarrative,
+      complianceChecked: initialChecked,
+      score: baseScore,
+      status: 'Final',
+      author: 'Dr. Rochmawati, S.KM., M.Kes.',
+      lastUpdated: '2026-10-27 10:00',
+      version: 2,
+      assessorScore: Number((baseScore - 0.05).toFixed(2)),
+      assessorNotes: 'Bukti sahih lengkap dan narasi sangat komprehensif.',
+      assessorStatus: 'Disetujui',
+    };
+  });
+
+  return result;
+};
 
 interface SimAkreditasiProProps {
   onBackToPortal?: () => void;
 }
 
 export const SimAkreditasiPro: React.FC<SimAkreditasiProProps> = ({ onBackToPortal }) => {
-  // App Mode: Admin / Tim Akreditasi vs Asesor Audit
+  // Mode: Admin Tim Akreditasi vs Asesor Audit
   const [activeRole, setActiveRole] = useState<'admin' | 'assessor'>('admin');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'criteria' | 'repository' | 'assessment_sheet' | 'discussions'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'led_form' | 'repository' | 'assessor_sheet' | 'discussions' | 'export_led'>('dashboard');
 
-  // Criteria State (for interactive simulation & grading)
-  const [criteria, setCriteria] = useState<Criterion[]>(INITIAL_CRITERIA);
-  const [selectedCriterionId, setSelectedCriterionId] = useState<number>(1);
-  const [expandedCriteriaIds, setExpandedCriteriaIds] = useState<number[]>([1, 4, 6]);
+  // Master Google Drive URL
+  const [masterGdriveUrl, setMasterGdriveUrl] = useState<string>(() => {
+    return localStorage.getItem('mkm_sim_akreditasi_gdrive_url') || GDRIVE_AKREDITASI_FOLDER_URL;
+  });
+  const [isEditMasterDriveOpen, setIsEditMasterDriveOpen] = useState(false);
+  const [tempMasterGdriveUrl, setTempMasterGdriveUrl] = useState(masterGdriveUrl);
 
-  // Evidence Repository State
-  const [evidences, setEvidences] = useState<DigitalEvidence[]>(INITIAL_EVIDENCES);
-  const [evidenceSearch, setEvidenceSearch] = useState('');
-  const [evidenceFilterCrit, setEvidenceFilterCrit] = useState<number | 'all'>('all');
-  const [evidenceFilterType, setEvidenceFilterType] = useState<string>('all');
+  // Selected Criterion and Sub-Criterion for Navigation
+  const [selectedCritNumber, setSelectedCritNumber] = useState<number>(1);
+  const activeCriterion = useMemo(() => {
+    return LAMPTKES_CRITERIA.find((c) => c.number === selectedCritNumber) || LAMPTKES_CRITERIA[0];
+  }, [selectedCritNumber]);
 
-  // Modals for Evidence
+  const [selectedSubCritCode, setSelectedSubCritCode] = useState<string>('1.1');
+
+  // When selected criterion changes, select its first sub-criterion
+  useEffect(() => {
+    if (activeCriterion.subCriteria.length > 0) {
+      setSelectedSubCritCode(activeCriterion.subCriteria[0].code);
+    }
+  }, [activeCriterion]);
+
+  // Selected Element for detailed editing
+  const [selectedElementCode, setSelectedElementCode] = useState<string>('1.1.1');
+  const activeElement = useMemo(() => {
+    return LAMPTKES_MAIN_ELEMENTS.find((el) => el.code === selectedElementCode) || LAMPTKES_MAIN_ELEMENTS[0];
+  }, [selectedElementCode]);
+
+  // Search & Filter for Elements
+  const [elementSearchQuery, setElementSearchQuery] = useState('');
+  const [elementStatusFilter, setElementStatusFilter] = useState<'all' | 'Final' | 'Review' | 'Draft'>('all');
+
+  // LED Answers State with persistence
+  const [answers, setAnswers] = useState<{ [code: string]: ElementLedAnswer }>(() => {
+    try {
+      const saved = localStorage.getItem('mkm_lamptkes_2025_answers');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return generateDefaultAnswers();
+  });
+
+  // Digital Evidences State with persistence
+  const [evidences, setEvidences] = useState<DigitalEvidenceItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mkm_lamptkes_2025_evidences');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_LAMPTKES_EVIDENCES;
+  });
+
+  // Dynamic Supporting Documents State (allows adding custom types beyond default list)
+  const [customSupportingDocs, setCustomSupportingDocs] = useState<SupportingDocTemplate[]>(() => {
+    try {
+      const saved = localStorage.getItem('mkm_lamptkes_2025_custom_docs');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
+
+  // Modal: Add Custom Supporting Document
+  const [isAddCustomDocOpen, setIsAddCustomDocOpen] = useState(false);
+  const [newDocCritId, setNewDocCritId] = useState<number>(1);
+  const [newDocName, setNewDocName] = useState('');
+  const [newDocCode, setNewDocCode] = useState('');
+  const [newDocCategory, setNewDocCategory] = useState<SupportingDocTemplate['category']>('Kebijakan/SK');
+  const [newDocDesc, setNewDocDesc] = useState('');
+  const [newDocMandatory, setNewDocMandatory] = useState(true);
+
+  // Modal: Add Digital Evidence
   const [isAddEvidenceOpen, setIsAddEvidenceOpen] = useState(false);
-  const [isSimUploadOpen, setIsSimUploadOpen] = useState(false);
   const [newEvTitle, setNewEvTitle] = useState('');
   const [newEvCode, setNewEvCode] = useState('');
   const [newEvCritId, setNewEvCritId] = useState<number>(1);
-  const [newEvIndicator, setNewEvIndicator] = useState('C.1.1');
-  const [newEvType, setNewEvType] = useState<DigitalEvidence['fileType']>('SK');
-  const [newEvProvider, setNewEvProvider] = useState<DigitalEvidence['cloudProvider']>('Google Drive');
-  const [newEvUrl, setNewEvUrl] = useState('');
-  const [newEvSize, setNewEvSize] = useState('2.5 MB (PDF)');
+  const [newEvElementCode, setNewEvElementCode] = useState('1.1.1');
+  const [newEvType, setNewEvType] = useState('SK/Kebijakan');
+  const [newEvProvider, setNewEvProvider] = useState<DigitalEvidenceItem['cloudProvider']>('Google Drive');
+  const [newEvUrl, setNewEvUrl] = useState(masterGdriveUrl);
+  const [newEvSize, setNewEvSize] = useState('3.2 MB (PDF)');
 
-  // Discussions & Audit Trail State
+  // Discussions and Audit Trail
   const [comments, setComments] = useState<DiscussionComment[]>(INITIAL_COMMENTS);
   const [auditLogs, setAuditLogs] = useState<AuditTrailLog[]>(INITIAL_AUDIT_LOGS);
   const [newCommentText, setNewCommentText] = useState('');
@@ -873,1779 +333,1961 @@ export const SimAkreditasiPro: React.FC<SimAkreditasiProProps> = ({ onBackToPort
   const [newCommentUrgency, setNewCommentUrgency] = useState<'Normal' | 'Penting' | 'Mendesak'>('Normal');
   const [activeDiscussionSubTab, setActiveDiscussionSubTab] = useState<'threads' | 'audit_trail'>('threads');
 
-  // Toast notification
-  const [toastMessage, setToastMessage] = useState<string>('');
+  // Toast feedback
+  const [toastMessage, setToastMessage] = useState('');
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3500);
+    setTimeout(() => setToastMessage(''), 3000);
   };
 
-  // ==========================================
-  // REAL-TIME SCORE & STATUS COMPUTATIONS
-  // ==========================================
+  // Sync to localStorage
+  useEffect(() => {
+    localStorage.setItem('mkm_lamptkes_2025_answers', JSON.stringify(answers));
+  }, [answers]);
 
-  const {
-    totalScore,
-    assessorTotalScore,
-    accreditationRank,
-    syaratPerluSatisfied,
-    criteriaScores,
-  } = useMemo(() => {
-    let weightedSum = 0;
-    let assessorWeightedSum = 0;
-    const scoresMap: { [key: number]: { adminScore: number; assessorScore: number } } = {};
+  useEffect(() => {
+    localStorage.setItem('mkm_lamptkes_2025_evidences', JSON.stringify(evidences));
+  }, [evidences]);
 
-    criteria.forEach((crit) => {
-      // Calculate average score of sub-indicators
-      const subSum = crit.subIndicators.reduce((acc, sub) => acc + sub.score, 0);
-      const critAvgScore = crit.subIndicators.length > 0 ? subSum / crit.subIndicators.length : 0;
+  useEffect(() => {
+    localStorage.setItem('mkm_lamptkes_2025_custom_docs', JSON.stringify(customSupportingDocs));
+  }, [customSupportingDocs]);
 
-      const subAssessorSum = crit.subIndicators.reduce((acc, sub) => acc + (sub.assessorScore ?? sub.score), 0);
-      const critAssessorAvg = crit.subIndicators.length > 0 ? subAssessorSum / crit.subIndicators.length : 0;
+  useEffect(() => {
+    localStorage.setItem('mkm_sim_akreditasi_gdrive_url', masterGdriveUrl);
+  }, [masterGdriveUrl]);
 
-      scoresMap[crit.id] = {
-        adminScore: critAvgScore,
-        assessorScore: critAssessorAvg,
-      };
+  // -------------------------------------------------------------------------
+  // METRICS & SCORE SIMULATOR CALCULATIONS (8 KRITERIA LAM-PTKES)
+  // -------------------------------------------------------------------------
 
-      // Weighted score contribution (scale to 400 points standard BAN-PT)
-      // Score = sum(critAvg * weight) * 100 / 100 * 100 = critAvg * weight
-      weightedSum += (critAvgScore * crit.weight * 100) / 100;
-      assessorWeightedSum += (critAssessorAvg * crit.weight * 100) / 100;
-    });
+  // Calculate scores per criterion
+  const criteriaScores = useMemo(() => {
+    return LAMPTKES_CRITERIA.map((crit) => {
+      const critElements = LAMPTKES_MAIN_ELEMENTS.filter((el) => el.criterionId === crit.id);
+      if (critElements.length === 0) return { ...crit, avgScore: 4.0, assessorAvgScore: 4.0, progressPct: 100, elementCount: 0 };
 
-    // Total score in standard BAN-PT 400 scale (Score = (weightedSum / 4) * 400 = weightedSum * 100)
-    // Here each weight is in % (sums to 100), critAvg is 1.0 - 4.0.
-    // Total Score = sum(critAvg * weight / 100) * 100 = 1.0 to 4.0.
-    // Standard BAN-PT score = (avg 1-4) * 100 = 100 to 400!
-    const normalizedScore = weightedSum * 100 / 100; // range ~ 100 to 400
-    const finalScore = Number((normalizedScore * 100).toFixed(1)); // e.g. 3.72 * 100 = 372.0
-    const finalAssessorScore = Number((assessorWeightedSum * 100).toFixed(1));
+      let totalScore = 0;
+      let totalAssessorScore = 0;
+      let filledElements = 0;
 
-    // Syarat Perlu Akreditasi Unggul check
-    // Kriteria 4 (SDM) >= 3.5, Kriteria 6 (Pendidikan) >= 3.5, Kriteria 9 (Luaran) >= 3.5
-    const k4Score = scoresMap[4]?.adminScore ?? 0;
-    const k6Score = scoresMap[6]?.adminScore ?? 0;
-    const k9Score = scoresMap[9]?.adminScore ?? 0;
-    const isSyaratPerluMet = k4Score >= 3.5 && k6Score >= 3.5 && k9Score >= 3.5;
-
-    // Predikat determination
-    // Unggul: Score >= 361 AND Syarat Perlu Met
-    // Baik Sekali: Score >= 301
-    // Baik: Score >= 200
-    // Tidak Terakreditasi: < 200
-    let rank: 'UNGGUL' | 'BAIK SEKALI' | 'BAIK' | 'TIDAK TERAKREDITASI' = 'BAIK';
-    if (finalScore >= 361) {
-      rank = isSyaratPerluMet ? 'UNGGUL' : 'BAIK SEKALI';
-    } else if (finalScore >= 301) {
-      rank = 'BAIK SEKALI';
-    } else if (finalScore >= 200) {
-      rank = 'BAIK';
-    } else {
-      rank = 'TIDAK TERAKREDITASI';
-    }
-
-    return {
-      totalScore: finalScore,
-      assessorTotalScore: finalAssessorScore,
-      accreditationRank: rank,
-      syaratPerluSatisfied: isSyaratPerluMet,
-      criteriaScores: scoresMap,
-    };
-  }, [criteria]);
-
-  // Total evidences count
-  const totalEvidenceCount = evidences.length;
-  const verifiedEvidenceCount = evidences.filter((e) => e.verified).length;
-
-  // Chart Data: Radar Chart (Capaian vs Target Unggul)
-  const radarChartData = useMemo(() => {
-    return criteria.map((c) => {
-      const avg = criteriaScores[c.id]?.adminScore ?? 0;
-      const assessorAvg = criteriaScores[c.id]?.assessorScore ?? 0;
-      return {
-        subject: c.code,
-        fullName: c.shortName,
-        Capaian: Number(avg.toFixed(2)),
-        Asesor: Number(assessorAvg.toFixed(2)),
-        TargetUnggul: 3.75,
-      };
-    });
-  }, [criteria, criteriaScores]);
-
-  // Chart Data: Bar Chart (Skor per Kriteria)
-  const barChartData = useMemo(() => {
-    return criteria.map((c) => {
-      const avg = criteriaScores[c.id]?.adminScore ?? 0;
-      return {
-        name: c.code,
-        fullName: c.shortName,
-        Skor: Number(avg.toFixed(2)),
-        Bobot: c.weight,
-      };
-    });
-  }, [criteria, criteriaScores]);
-
-  // Chart Data: Dokumen Status Distribution
-  const docStatusData = useMemo(() => {
-    let lengkap = 0;
-    let review = 0;
-    let draft = 0;
-    let belum = 0;
-
-    criteria.forEach((c) => {
-      c.subIndicators.forEach((s) => {
-        if (s.status === 'Lengkap') lengkap++;
-        else if (s.status === 'Review') review++;
-        else if (s.status === 'Draft') draft++;
-        else belum++;
+      critElements.forEach((el) => {
+        const ans = answers[el.code];
+        if (ans) {
+          totalScore += ans.score;
+          totalAssessorScore += ans.assessorScore || ans.score;
+          if (ans.narrative && ans.narrative.trim().length > 30) {
+            filledElements++;
+          }
+        } else {
+          totalScore += 3.5;
+          totalAssessorScore += 3.5;
+        }
       });
+
+      const avgScore = Number((totalScore / critElements.length).toFixed(2));
+      const assessorAvgScore = Number((totalAssessorScore / critElements.length).toFixed(2));
+      const progressPct = Math.round((filledElements / critElements.length) * 100);
+
+      return {
+        ...crit,
+        avgScore,
+        assessorAvgScore,
+        progressPct,
+        elementCount: critElements.length,
+        filledElements,
+      };
     });
+  }, [answers]);
 
-    return [
-      { name: 'Lengkap', value: lengkap, color: '#0E9549' },
-      { name: 'Review', value: review, color: '#D97706' },
-      { name: 'Draft', value: draft, color: '#2563EB' },
-      { name: 'Belum', value: belum, color: '#DC2626' },
-    ];
-  }, [criteria]);
+  // Overall Weighted Score
+  const totalWeight = useMemo(() => {
+    return LAMPTKES_CRITERIA.reduce((sum, c) => sum + c.weight, 0);
+  }, []);
 
-  // Timeline Progress Data
-  const progressTimelineData = [
-    { month: 'Bln 1', Kesiapan: 35 },
-    { month: 'Bln 2', Kesiapan: 52 },
-    { month: 'Bln 3', Kesiapan: 68 },
-    { month: 'Bln 4', Kesiapan: 79 },
-    { month: 'Bln 5', Kesiapan: 88 },
-    { month: 'Bln 6 (Saat Ini)', Kesiapan: 93 },
-  ];
+  const totalProdiScore = useMemo(() => {
+    const weightedSum = criteriaScores.reduce((sum, c) => sum + c.avgScore * c.weight, 0);
+    return Number((weightedSum / totalWeight).toFixed(2));
+  }, [criteriaScores, totalWeight]);
 
-  // ==========================================
-  // HANDLERS
-  // ==========================================
+  const totalAssessorScore = useMemo(() => {
+    const weightedSum = criteriaScores.reduce((sum, c) => sum + c.assessorAvgScore * c.weight, 0);
+    return Number((weightedSum / totalWeight).toFixed(2));
+  }, [criteriaScores, totalWeight]);
 
-  // Update Indicator Score (Simulator)
-  const handleUpdateIndicatorScore = (critId: number, subId: string, newScore: number) => {
-    setCriteria((prev) =>
-      prev.map((c) => {
-        if (c.id === critId) {
-          return {
-            ...c,
-            subIndicators: c.subIndicators.map((s) =>
-              s.id === subId ? { ...s, score: Math.min(4.0, Math.max(1.0, Number(newScore.toFixed(2)))) } : s
-            ),
-          };
-        }
-        return c;
-      })
-    );
-  };
-
-  // Update Assessor Assessment
-  const handleUpdateAssessorScore = (
-    critId: number,
-    subId: string,
-    score: number,
-    notes: string,
-    status: 'Disetujui' | 'Perlu Perbaikan' | 'Belum Dinilai'
-  ) => {
-    setCriteria((prev) =>
-      prev.map((c) => {
-        if (c.id === critId) {
-          return {
-            ...c,
-            subIndicators: c.subIndicators.map((s) =>
-              s.id === subId ? { ...s, assessorScore: score, assessorNotes: notes, assessorStatus: status } : s
-            ),
-          };
-        }
-        return c;
-      })
-    );
-
-    // Add Audit Log
-    const targetSub = criteria.find((c) => c.id === critId)?.subIndicators.find((s) => s.id === subId);
-    setAuditLogs((prev) => [
-      {
-        id: `log-${Date.now()}`,
-        action: 'Verifikasi Asesor',
-        description: `Asesor memberikan nilai ${score.toFixed(2)} pada ${targetSub?.code || 'Indikator'} status: ${status}`,
-        actor: 'Dr. Ir. Asesor Audit Eksternal, M.Kes.',
-        role: 'Asesor Audit',
-        timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-        criterionCode: `C${critId}`,
-      },
-      ...prev,
-    ]);
-
-    showToast('Penilaian & catatan deskriptif asesor berhasil disimpan!');
-  };
-
-  // Preset Simulator
-  const handleApplyPreset = (presetType: 'unggul' | 'real' | 'ambang') => {
-    if (presetType === 'unggul') {
-      setCriteria((prev) =>
-        prev.map((c) => ({
-          ...c,
-          subIndicators: c.subIndicators.map((s) => ({ ...s, score: 3.85 })),
-        }))
-      );
-      showToast('Simulasi Target Unggul diterapkan (Skor Proyeksi 385.0)');
-    } else if (presetType === 'ambang') {
-      setCriteria((prev) =>
-        prev.map((c) => ({
-          ...c,
-          subIndicators: c.subIndicators.map((s) => ({ ...s, score: 3.25 })),
-        }))
-      );
-      showToast('Simulasi Ambang Batas Baik Sekali diterapkan (Skor 325.0)');
+  // Accreditation Grade Calculation (LAM-PTKes Scale)
+  const getAccreditationGrade = (score: number) => {
+    if (score >= 3.61) {
+      return {
+        title: 'Unggul',
+        badgeColor: 'bg-emerald-600 text-white',
+        border: 'border-emerald-500',
+        textColor: 'text-emerald-400',
+        desc: 'Memenuhi seluruh kriteria mutu secara istimewa dan melampaui Standar Nasional Pendidikan Tinggi (SN-Dikti).',
+      };
+    } else if (score >= 3.01) {
+      return {
+        title: 'Baik Sekali',
+        badgeColor: 'bg-blue-600 text-white',
+        border: 'border-blue-500',
+        textColor: 'text-blue-400',
+        desc: 'Memenuhi Standar Nasional Pendidikan Tinggi dengan kinerja sangat memuaskan.',
+      };
+    } else if (score >= 2.0) {
+      return {
+        title: 'Baik',
+        badgeColor: 'bg-amber-600 text-white',
+        border: 'border-amber-500',
+        textColor: 'text-amber-400',
+        desc: 'Memenuhi standar minimal penyelenggaraan program studi magister.',
+      };
     } else {
-      setCriteria(INITIAL_CRITERIA);
-      showToast('Reset nilai ke data riil eksisting.');
+      return {
+        title: 'Tidak Terakreditasi',
+        badgeColor: 'bg-rose-600 text-white',
+        border: 'border-rose-500',
+        textColor: 'text-rose-400',
+        desc: 'Belum memenuhi ambang batas minimum kriteria LAM-PTKes.',
+      };
     }
   };
 
-  // Add Evidence Link
+  const prodiGrade = getAccreditationGrade(totalProdiScore);
+  const assessorGrade = getAccreditationGrade(totalAssessorScore);
+
+  // Overall LED completion percentage
+  const totalElementsCount = LAMPTKES_MAIN_ELEMENTS.length; // 121
+  const totalCompletedElements = useMemo(() => {
+    return Object.values(answers).filter((a) => a.narrative && a.narrative.trim().length > 30).length;
+  }, [answers]);
+  const overallProgressPct = Math.round((totalCompletedElements / totalElementsCount) * 100);
+
+  // Filtered elements list for navigation
+  const filteredElements = useMemo(() => {
+    return LAMPTKES_MAIN_ELEMENTS.filter((el) => {
+      // Filter by criterion
+      if (el.criterionId !== selectedCritNumber) return false;
+
+      // Filter by sub-criterion if selected
+      if (selectedSubCritCode && el.subCriterionId !== `sub-${selectedSubCritCode}`) {
+        // If sub-criterion is selected, match
+      }
+
+      // Filter by search query (code or question)
+      if (elementSearchQuery.trim()) {
+        const q = elementSearchQuery.toLowerCase();
+        const matchCode = el.code.toLowerCase().includes(q);
+        const matchQuestion = el.question.toLowerCase().includes(q);
+        const matchBenchmark = el.benchmark?.toLowerCase().includes(q) || false;
+        if (!matchCode && !matchQuestion && !matchBenchmark) return false;
+      }
+
+      // Filter by status
+      if (elementStatusFilter !== 'all') {
+        const ans = answers[el.code];
+        if (!ans || ans.status !== elementStatusFilter) return false;
+      }
+
+      return true;
+    });
+  }, [selectedCritNumber, selectedSubCritCode, elementSearchQuery, elementStatusFilter, answers]);
+
+  // Combined supporting documents for active criterion (default + user added)
+  const currentCriterionSupportingDocs = useMemo(() => {
+    const def = activeCriterion.supportingDocuments;
+    const custom = customSupportingDocs.filter((d) => d.criterionId === activeCriterion.id);
+    return [...def, ...custom];
+  }, [activeCriterion, customSupportingDocs]);
+
+  // -------------------------------------------------------------------------
+  // HANDLERS
+  // -------------------------------------------------------------------------
+
+  // Update LED Narrative
+  const handleUpdateNarrative = (elementCode: string, newText: string) => {
+    setAnswers((prev) => {
+      const existing = prev[elementCode] || {
+        elementCode,
+        narrative: '',
+        complianceChecked: {},
+        score: 3.8,
+        status: 'Draft',
+        author: 'Dr. Rochmawati, S.KM., M.Kes.',
+        lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        version: 1,
+      };
+      return {
+        ...prev,
+        [elementCode]: {
+          ...existing,
+          narrative: newText,
+          lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          version: existing.version + 1,
+        },
+      };
+    });
+  };
+
+  // Toggle Compliance Checkbox
+  const handleToggleCompliance = (elementCode: string, order: number) => {
+    setAnswers((prev) => {
+      const existing = prev[elementCode];
+      const currentChecked = existing?.complianceChecked || {};
+      const newChecked = { ...currentChecked, [order]: !currentChecked[order] };
+
+      return {
+        ...prev,
+        [elementCode]: {
+          ...existing,
+          complianceChecked: newChecked,
+          lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        },
+      };
+    });
+  };
+
+  // Update Element Score & Status
+  const handleUpdateScore = (elementCode: string, score: number) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [elementCode]: {
+        ...prev[elementCode],
+        score,
+        lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      },
+    }));
+  };
+
+  const handleUpdateStatus = (elementCode: string, status: 'Draft' | 'Review' | 'Final') => {
+    setAnswers((prev) => ({
+      ...prev,
+      [elementCode]: {
+        ...prev[elementCode],
+        status,
+        lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      },
+    }));
+    showToast(`Status Elemen ${elementCode} diubah menjadi "${status}".`);
+  };
+
+  // Assessor Review Handlers
+  const handleUpdateAssessorReview = (elementCode: string, assessorScore: number, notes: string, status: 'Disetujui' | 'Perlu Perbaikan') => {
+    setAnswers((prev) => ({
+      ...prev,
+      [elementCode]: {
+        ...prev[elementCode],
+        assessorScore,
+        assessorNotes: notes,
+        assessorStatus: status,
+      },
+    }));
+
+    // Add audit log
+    const newLog: AuditTrailLog = {
+      id: `log-${Date.now()}`,
+      action: 'Verifikasi Asesor',
+      description: `Asesor memperbarui penilaian Elemen ${elementCode} (Skor: ${assessorScore}, Status: ${status}).`,
+      actor: 'Asesor Audit',
+      role: 'Asesor Audit',
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      elementCode,
+      criterionNumber: activeCriterion.number,
+    };
+    setAuditLogs((prev) => [newLog, ...prev]);
+    showToast(`Penilaian Asesor untuk Elemen ${elementCode} berhasil disimpan.`);
+  };
+
+  // Save Master Drive URL
+  const handleSaveMasterDriveUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tempMasterGdriveUrl.trim()) return;
+    setMasterGdriveUrl(tempMasterGdriveUrl.trim());
+    setIsEditMasterDriveOpen(false);
+    showToast('Tautan Master Google Drive berhasil diperbarui!');
+  };
+
+  // Copy Master Drive URL
+  const handleCopyDriveUrl = () => {
+    navigator.clipboard.writeText(masterGdriveUrl);
+    showToast('Tautan Google Drive berhasil disalin ke papan klip!');
+  };
+
+  // Add Custom Supporting Document Handler
+  const handleAddCustomDoc = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDocName.trim()) return;
+
+    const newDoc: SupportingDocTemplate = {
+      id: `doc-custom-${Date.now()}`,
+      criterionId: newDocCritId,
+      code: newDocCode.trim() || `DOC-K${newDocCritId}-CUST`,
+      name: newDocName.trim(),
+      category: newDocCategory,
+      description: newDocDesc.trim() || 'Dokumen pendukung kriteria tambahan prodi.',
+      isMandatory: newDocMandatory,
+    };
+
+    setCustomSupportingDocs((prev) => [...prev, newDoc]);
+    setIsAddCustomDocOpen(false);
+    setNewDocName('');
+    setNewDocCode('');
+    setNewDocDesc('');
+    showToast(`Dokumen pendukung baru berhasil ditambahkan ke Kriteria ${newDocCritId}!`);
+  };
+
+  // Add Digital Evidence Item
   const handleAddEvidence = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEvTitle.trim()) return;
 
-    const newEvidence: DigitalEvidence = {
+    const newEvidence: DigitalEvidenceItem = {
       id: `ev-${Date.now()}`,
-      code: newEvCode.trim() || `BKT-C${newEvCritId}-${evidences.length + 1}`,
+      code: newEvCode.trim() || `BUKTI-K${newEvCritId}-${Date.now().toString().slice(-3)}`,
       title: newEvTitle.trim(),
       criterionId: newEvCritId,
-      indicatorCode: newEvIndicator,
+      elementCode: newEvElementCode,
       fileType: newEvType,
       cloudProvider: newEvProvider,
-      cloudUrl: newEvUrl.trim() || 'https://drive.google.com/drive/folders/mkm-akreditasi',
+      cloudUrl: newEvUrl.trim() || masterGdriveUrl,
       fileSize: newEvSize,
-      uploadDate: new Date().toISOString().slice(0, 10),
-      uploader: activeRole === 'admin' ? 'Admin Tim Akreditasi' : 'Asesor Audit',
-      verified: activeRole === 'assessor',
+      uploadDate: new Date().toISOString().split('T')[0],
+      uploader: 'Tim Akreditasi',
+      verified: true,
+      isUserAdded: true,
     };
 
     setEvidences((prev) => [newEvidence, ...prev]);
-
-    // Update indicator evidence count
-    setCriteria((prev) =>
-      prev.map((c) => {
-        if (c.id === newEvCritId) {
-          return {
-            ...c,
-            subIndicators: c.subIndicators.map((s) =>
-              s.code === newEvIndicator ? { ...s, evidenceCount: s.evidenceCount + 1 } : s
-            ),
-          };
-        }
-        return c;
-      })
-    );
-
-    // Audit Log
-    setAuditLogs((prev) => [
-      {
-        id: `log-${Date.now()}`,
-        action: 'Unggah Berkas',
-        description: `Tautan berkas digital "${newEvidence.title}" ditambahkan ke ${newEvidence.indicatorCode}`,
-        actor: activeRole === 'admin' ? 'Admin Tim Akreditasi' : 'Asesor Audit',
-        role: activeRole === 'admin' ? 'Admin Tim Akreditasi' : 'Asesor Audit',
-        timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-        criterionCode: `C${newEvCritId}`,
-      },
-      ...prev,
-    ]);
-
+    setIsAddEvidenceOpen(false);
     setNewEvTitle('');
     setNewEvCode('');
-    setNewEvUrl('');
-    setIsAddEvidenceOpen(false);
-    showToast('Tautan bukti digital berhasil disimpan ke repositori cloud!');
+    showToast('Bukti digital baru berhasil ditambahkan dan ditautkan ke Google Drive!');
   };
 
-  // Delete Evidence
-  const handleDeleteEvidence = (id: string) => {
-    setEvidences((prev) => prev.filter((e) => e.id !== id));
-    showToast('Bukti digital telah dihapus.');
+  // Reset to default seed
+  const handleResetToDefault = () => {
+    if (window.confirm('Reset seluruh narasi LED, penilaian, dan repositori ke data awal resmi LAM-PTKes 2025? Perubahan lokal akan dikembalikan.')) {
+      setAnswers(generateDefaultAnswers());
+      setEvidences(DEFAULT_LAMPTKES_EVIDENCES);
+      setCustomSupportingDocs([]);
+      setMasterGdriveUrl(GDRIVE_AKREDITASI_FOLDER_URL);
+      localStorage.removeItem('mkm_lamptkes_2025_answers');
+      localStorage.removeItem('mkm_lamptkes_2025_evidences');
+      localStorage.removeItem('mkm_lamptkes_2025_custom_docs');
+      localStorage.removeItem('mkm_sim_akreditasi_gdrive_url');
+      showToast('Sistem berhasil di-reset ke data default instrumen LAM-PTKes 2025.');
+    }
   };
 
-  // Toggle Verify Evidence
-  const handleToggleVerifyEvidence = (id: string) => {
-    setEvidences((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, verified: !e.verified } : e))
-    );
-    showToast('Status verifikasi bukti diperbarui!');
-  };
-
-  // Add Comment
+  // Add comment
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCommentText.trim()) return;
 
-    const newComment: DiscussionComment = {
+    const newComm: DiscussionComment = {
       id: `comm-${Date.now()}`,
-      authorName: activeRole === 'admin' ? 'Admin Tim Akreditasi' : 'Dr. Ir. Asesor Audit Eksternal, M.Kes.',
+      authorName: activeRole === 'admin' ? 'Admin Tim Akreditasi' : 'Asesor Audit',
       authorRole: activeRole === 'admin' ? 'Admin Tim Akreditasi' : 'Asesor Audit',
       criterionId: newCommentCritId,
+      elementCode: selectedElementCode,
       text: newCommentText.trim(),
-      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
       urgency: newCommentUrgency,
-      avatarBg: activeRole === 'admin' ? 'bg-[#054DA0]' : 'bg-[#D97706]',
+      avatarBg: activeRole === 'admin' ? 'bg-indigo-600' : 'bg-emerald-600',
     };
 
-    setComments((prev) => [newComment, ...prev]);
-
-    // Audit log
-    setAuditLogs((prev) => [
-      {
-        id: `log-${Date.now()}`,
-        action: 'Komentar',
-        description: `Catatan baru diposting pada Kriteria ${newCommentCritId} oleh ${newComment.authorName}`,
-        actor: newComment.authorName,
-        role: newComment.authorRole,
-        timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-        criterionCode: `C${newCommentCritId}`,
-      },
-      ...prev,
-    ]);
-
+    setComments((prev) => [newComm, ...prev]);
     setNewCommentText('');
-    showToast('Catatan diskusi kolaboratif berhasil diposting!');
+    showToast('Catatan diskusi berhasil dipublikasikan!');
   };
 
-  // Filtered Evidences
-  const filteredEvidences = useMemo(() => {
-    return evidences.filter((ev) => {
-      const matchSearch =
-        ev.title.toLowerCase().includes(evidenceSearch.toLowerCase()) ||
-        ev.code.toLowerCase().includes(evidenceSearch.toLowerCase()) ||
-        ev.indicatorCode.toLowerCase().includes(evidenceSearch.toLowerCase());
-      const matchCrit = evidenceFilterCrit === 'all' || ev.criterionId === evidenceFilterCrit;
-      const matchType = evidenceFilterType === 'all' || ev.fileType === evidenceFilterType;
-      return matchSearch && matchCrit && matchType;
-    });
-  }, [evidences, evidenceSearch, evidenceFilterCrit, evidenceFilterType]);
+  // -------------------------------------------------------------------------
+  // RADAR CHART DATA PREPARATION
+  // -------------------------------------------------------------------------
+  const radarChartData = useMemo(() => {
+    return criteriaScores.map((c) => ({
+      subject: c.code,
+      fullName: c.shortName,
+      SkorProdi: c.avgScore,
+      SkorAsesor: c.assessorAvgScore,
+      AmbangUnggul: 3.61,
+      fullMark: 4.0,
+    }));
+  }, [criteriaScores]);
 
-  // Toggle Accordion Criterion
-  const toggleCriterionAccordion = (id: number) => {
-    setExpandedCriteriaIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
+  // Bar chart data preparation
+  const barChartData = useMemo(() => {
+    return criteriaScores.map((c) => ({
+      name: c.code,
+      shortName: c.shortName,
+      'Skor Prodi': c.avgScore,
+      'Skor Asesor': c.assessorAvgScore,
+      Bobot: c.weight,
+    }));
+  }, [criteriaScores]);
 
   return (
-    <div className="min-h-screen bg-[#F4F7FC] text-[#16202E] font-['Plus_Jakarta_Sans',sans-serif] flex flex-col antialiased">
-      
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] antialiased">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 bg-[#032B5B] text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm font-bold border border-[#F5BA13]/30 animate-bounce">
-          <Sparkles className="w-4 h-4 text-[#F5BA13]" />
+        <div className="fixed top-20 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-400 animate-bounce text-sm font-semibold">
+          <CheckCircle2 className="w-5 h-5" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* ==========================================
-          TOP INSTITUTIONAL HEADER & APP BRANDING
-          ========================================== */}
-      <header className="bg-white border-b border-[#DCE5F0] sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
-          
-          {/* Brand & Program Studi Info */}
-          <div className="flex items-center gap-3">
-            <img
-              src="/assets/aistudio/UMPontianak_Logo_Warna_2e912afe.png"
-              alt="Logo Universitas Muhammadiyah Pontianak"
-              className="h-11 w-auto object-contain bg-white p-0.5 rounded shadow-xs"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base sm:text-lg text-[#032B5B] block leading-tight">
-                  SIM-Akreditasi PRO
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF3FC] text-[#054DA0] border border-[#054DA0]/20 uppercase">
-                  9 Kriteria LAM-PTKes
-                </span>
+      {/* =========================================================================
+          TOP INSTITUTIONAL HEADER & NAVIGATION BAR
+      ========================================================================= */}
+      <header className="bg-slate-950/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            {/* Brand Logo & Context */}
+            <div className="flex items-center gap-4">
+              <img
+                src="/assets/aistudio/UMPontianak_Logo_Warna_2e912afe.png"
+                alt="Logo UM Pontianak"
+                className="h-12 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-md"
+              />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-300 bg-clip-text text-transparent">
+                    SIM-Akreditasi PRO
+                  </span>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    LAM-PTKes 2025
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 font-medium hidden sm:block">
+                  Instrumen Buku III: Laporan Evaluasi Diri (LED) · S2 Magister Kesehatan Masyarakat FIKPsi UM Pontianak
+                </p>
               </div>
-              <p className="text-[11px] text-[#5B6B82] font-semibold">
-                Sistem Informasi Akreditasi & Asesmen Program Studi Magister Kesehatan Masyarakat (S2) FIKPsi UM Pontianak
-              </p>
-            </div>
-          </div>
-
-          {/* Header Controls: Role Switcher & Back Button */}
-          <div className="flex items-center gap-3">
-            
-            {/* DUAL-MODE ROLE TOGGLE (Admin vs Asesor) */}
-            <div className="bg-[#F4F7FC] p-1 rounded-xl border border-[#DCE5F0] flex items-center shadow-inner">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveRole('admin');
-                  showToast('Beralih ke Mode Admin Tim Akreditasi PS');
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                  activeRole === 'admin'
-                    ? 'bg-[#054DA0] text-white shadow-xs'
-                    : 'text-[#5B6B82] hover:text-[#032B5B]'
-                }`}
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Admin Tim PS</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveRole('assessor');
-                  setActiveTab('assessment_sheet');
-                  showToast('Mode Asesor Audit Eksternal Aktif');
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                  activeRole === 'assessor'
-                    ? 'bg-[#D97706] text-white shadow-xs'
-                    : 'text-[#5B6B82] hover:text-[#032B5B]'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Asesor Audit</span>
-              </button>
             </div>
 
-            {/* Back to Portal Button */}
-            {onBackToPortal && (
-              <button
-                type="button"
-                onClick={onBackToPortal}
-                className="px-3 py-2 text-xs font-bold text-[#054DA0] bg-[#EBF3FC] hover:bg-[#d9ebfd] border border-[#054DA0]/20 rounded-xl transition-all flex items-center gap-1.5"
-                title="Kembali ke Portal MKM"
+            {/* Quick Actions & Role Switcher */}
+            <div className="flex items-center gap-3">
+              {/* Google Drive Direct Folder Button */}
+              <a
+                href={masterGdriveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Buka Repositori Berkas Akreditasi di Google Drive"
+                className="hidden md:flex items-center gap-2 px-3.5 py-2 text-xs font-semibold bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 rounded-xl transition shadow-sm hover:scale-[1.02]"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Portal MKM</span>
+                <HardDrive className="w-4 h-4 text-emerald-400" />
+                <span>Google Drive Berkas</span>
+                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+              </a>
+
+              {/* Edit Drive Link Modal Trigger */}
+              <button
+                onClick={() => {
+                  setTempMasterGdriveUrl(masterGdriveUrl);
+                  setIsEditMasterDriveOpen(true);
+                }}
+                title="Ubah Tautan Folder Google Drive Master"
+                className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700"
+              >
+                <LinkIcon className="w-4 h-4" />
               </button>
-            )}
 
-          </div>
+              {/* Mode Toggle: Admin Tim Akreditasi vs Asesor Audit */}
+              <div className="bg-slate-800/90 p-1 rounded-xl border border-slate-700 flex items-center">
+                <button
+                  onClick={() => setActiveRole('admin')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    activeRole === 'admin'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Tim Prodi</span>
+                </button>
+                <button
+                  onClick={() => setActiveRole('assessor')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    activeRole === 'assessor'
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Asesor Audit</span>
+                </button>
+              </div>
 
-        </div>
-
-        {/* Dynamic Mode Notification Bar */}
-        <div className={`px-4 sm:px-8 py-1.5 text-xs font-bold flex items-center justify-between border-t border-b transition-colors ${
-          activeRole === 'admin'
-            ? 'bg-[#EBF3FC] text-[#054DA0] border-[#054DA0]/20'
-            : 'bg-[#FEF3C7] text-[#92400E] border-[#F59E0B]/30'
-        }`}>
-          <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
-            <span className="flex items-center gap-1.5">
-              {activeRole === 'admin' ? (
-                <>
-                  <UserCheck className="w-4 h-4 text-[#054DA0]" />
-                  <span>Mode Penyusunan Aktif: Hak akses penuh mengedit indikator LED/LKPS, mengunggah bukti, dan simulator nilai.</span>
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="w-4 h-4 text-[#D97706]" />
-                  <span>Mode Asesor Audit Aktif: Penilaian mandiri skala 1-4, verifikasi keabsahan bukti, dan catatan rekomendasi asesmen lapangan.</span>
-                </>
+              {/* Back to Portal / Landing */}
+              {onBackToPortal && (
+                <button
+                  onClick={onBackToPortal}
+                  className="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition flex items-center gap-1.5 border border-slate-700"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Kembali</span>
+                </button>
               )}
-            </span>
+            </div>
+          </div>
 
-            <span className="text-[11px] font-mono opacity-90 hidden md:inline">
-              Instrumen: LAM-PTKes IAPS S2 Kesmas v2.1
-            </span>
+          {/* Sub Navigation Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto py-2 border-t border-slate-800/80 no-scrollbar text-xs font-semibold">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`px-3.5 py-2 rounded-lg transition whitespace-nowrap flex items-center gap-2 ${
+                activeTab === 'dashboard'
+                  ? 'bg-blue-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Executive Dashboard & Simulator Nilai</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('led_form')}
+              className={`px-3.5 py-2 rounded-lg transition whitespace-nowrap flex items-center gap-2 ${
+                activeTab === 'led_form'
+                  ? 'bg-blue-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Penyusunan LED (8 Kriteria & 121 Elemen)</span>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-900 text-blue-200 font-mono">
+                {overallProgressPct}%
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('repository')}
+              className={`px-3.5 py-2 rounded-lg transition whitespace-nowrap flex items-center gap-2 ${
+                activeTab === 'repository'
+                  ? 'bg-blue-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <FolderSync className="w-4 h-4" />
+              <span>Repositori Berkas & Dokumen Pendukung</span>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-700 text-slate-300">
+                {evidences.length} Berkas
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('assessor_sheet')}
+              className={`px-3.5 py-2 rounded-lg transition whitespace-nowrap flex items-center gap-2 ${
+                activeTab === 'assessor_sheet'
+                  ? 'bg-emerald-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Lembar Asesmen (Asesor)</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('export_led')}
+              className={`px-3.5 py-2 rounded-lg transition whitespace-nowrap flex items-center gap-2 ${
+                activeTab === 'export_led'
+                  ? 'bg-blue-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <Printer className="w-4 h-4" />
+              <span>Ekspor Dokumen LED (Word / PDF)</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('discussions')}
+              className={`px-3.5 py-2 rounded-lg transition whitespace-nowrap flex items-center gap-2 ${
+                activeTab === 'discussions'
+                  ? 'bg-blue-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Diskusi & Audit Trail</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* ==========================================
-          MAIN NAVIGATION TABS (5 CORE MODULES)
-          ========================================== */}
-      <div className="bg-white border-b border-[#DCE5F0] sticky top-[105px] z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-none">
-          
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'dashboard'
-                ? 'bg-[#054DA0] text-white shadow-xs'
-                : 'text-[#5B6B82] hover:text-[#032B5B] hover:bg-[#EBF3FC]'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span>Executive Dashboard & Simulator</span>
-          </button>
+      {/* =========================================================================
+          MAIN CONTENT AREA
+      ========================================================================= */}
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+        {/* Banner Informational LAM-PTKes 2025 */}
+        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-950/80 via-slate-900 to-indigo-950/80 border border-blue-800/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 bg-blue-600/20 border border-blue-500/40 rounded-xl text-blue-400">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                Instrumen Akreditasi LAM-PTKes 2025 (Buku III: LED Program Studi Magister Kesehatan Masyarakat)
+              </h2>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Struktur data 8 Kriteria mencakup 121 Elemen Utama, Butir Pemenuhan Standar, dan Dokumen Pendukung Berkas Terhubung Cloud Drive.
+              </p>
+            </div>
+          </div>
 
-          <button
-            onClick={() => setActiveTab('criteria')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'criteria'
-                ? 'bg-[#054DA0] text-white shadow-xs'
-                : 'text-[#5B6B82] hover:text-[#032B5B] hover:bg-[#EBF3FC]'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>Pemetaan 9 Kriteria</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-current font-mono">
-              LED/LKPS
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('repository')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'repository'
-                ? 'bg-[#054DA0] text-white shadow-xs'
-                : 'text-[#5B6B82] hover:text-[#032B5B] hover:bg-[#EBF3FC]'
-            }`}
-          >
-            <HardDrive className="w-4 h-4" />
-            <span>Repository Bukti Digital</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#E8F7EE] text-[#0E9549] font-bold">
-              {evidences.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('assessment_sheet')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'assessment_sheet'
-                ? 'bg-[#D97706] text-white shadow-xs'
-                : 'text-[#5B6B82] hover:text-[#032B5B] hover:bg-[#FFFBEB]'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Lembar Asesmen Asesor</span>
-            {activeRole === 'assessor' && (
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('discussions')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'discussions'
-                ? 'bg-[#054DA0] text-white shadow-xs'
-                : 'text-[#5B6B82] hover:text-[#032B5B] hover:bg-[#EBF3FC]'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Diskusi & Audit Trail</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#EBF3FC] text-[#054DA0] font-bold">
-              {comments.length}
-            </span>
-          </button>
-
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button
+              onClick={handleCopyDriveUrl}
+              className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition flex items-center gap-1.5 border border-slate-700"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Salin Link G-Drive</span>
+            </button>
+            <button
+              onClick={handleResetToDefault}
+              className="px-3 py-1.5 text-xs font-semibold bg-rose-950/40 hover:bg-rose-900 text-rose-300 rounded-lg transition flex items-center gap-1.5 border border-rose-800/50"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Data</span>
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* ==========================================
-          MAIN CONTENT CONTAINER
-          ========================================== */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
-        
-        {/* ============================================================
-            MODULE 1: EXECUTIVE DASHBOARD & REAL-TIME VALUE SIMULATOR
-            ============================================================ */}
+        {/* =======================================================================
+            TAB 1: EXECUTIVE DASHBOARD & SIMULATOR NILAI
+        ======================================================================= */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            
-            {/* Top Score Banner: Akreditasi Real-time Aggregator */}
-            <div className="rounded-2xl bg-gradient-to-r from-[#032B5B] via-[#054DA0] to-[#0E9549] text-white p-6 sm:p-8 shadow-md relative overflow-hidden">
-              <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 right-32 w-48 h-48 rounded-full bg-[#F5BA13]/20 blur-2xl pointer-events-none" />
-
-              <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                
-                {/* Score Projection Details */}
-                <div className="space-y-2 max-w-xl">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-[#FFDE72] text-xs font-bold uppercase tracking-wider backdrop-blur-xs">
-                    <Sparkles className="w-3.5 h-3.5 text-[#F5BA13]" />
-                    <span>Proyeksi Status Akreditasi Terkini</span>
-                  </div>
-
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
-                    SIMULASI NILAI AKREDITASI: {totalScore} / 400
-                  </h2>
-
-                  <p className="text-xs sm:text-sm text-[#D3E5FA] leading-relaxed">
-                    Berdasarkan asesmen mandiri terhadap 9 Kriteria LAM-PTKes. 
-                    {syaratPerluSatisfied
-                      ? ' Seluruh Syarat Perlu Akreditasi Unggul (SDM, Kurikulum, Luaran) berhasil terpenuhi.'
-                      : ' Perhatian: Ada kriteria syarat perlu belum mencapai ambang batas minimal 3.50.'}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-3 pt-2">
-                    <span className="text-xs bg-white/20 px-3 py-1 rounded-lg backdrop-blur-xs font-semibold">
-                      Nilai Riil Asesor: <strong>{assessorTotalScore}</strong>
-                    </span>
-                    <span className="text-xs bg-white/20 px-3 py-1 rounded-lg backdrop-blur-xs font-semibold">
-                      Target Nilai: <strong>≥ 361.0 (Unggul)</strong>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Predikat Badge Big Card */}
-                <div className="bg-white/15 backdrop-blur-md p-5 rounded-2xl border border-white/25 text-center min-w-[260px] shadow-lg space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#D3E5FA] block">
-                    Predikat Hasil Asesmen
+            {/* Top Score Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* Card 1: Simulasi Skor Prodi */}
+              <div className="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/80 backdrop-blur-sm relative overflow-hidden group hover:border-blue-500/50 transition">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Skor Evaluasi Diri (Prodi)
                   </span>
-
-                  <div className="py-2 px-4 rounded-xl bg-gradient-to-r from-[#F5BA13] to-[#E5AC0B] text-[#16202E] font-black text-2xl sm:text-3xl tracking-tight shadow-md flex items-center justify-center gap-2">
-                    <Award className="w-7 h-7 text-[#16202E]" />
-                    <span>{accreditationRank}</span>
-                  </div>
-
-                  <div className="text-[11px] text-white/90 pt-1 flex items-center justify-center gap-1.5 font-medium">
-                    {syaratPerluSatisfied ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-[#4ADE80]" />
-                        <span>Syarat Perlu Terpenuhi</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertTriangle className="w-4 h-4 text-[#FCA5A5]" />
-                        <span>Syarat Perlu Belum Lengkap</span>
-                      </>
-                    )}
+                  <div className="p-2 bg-blue-600/20 text-blue-400 rounded-lg">
+                    <Award className="w-5 h-5" />
                   </div>
                 </div>
+                <div className="mt-3 flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold text-white font-mono">{totalProdiScore}</span>
+                  <span className="text-xs font-bold text-slate-400">/ 4.00</span>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-md text-xs font-extrabold ${prodiGrade.badgeColor}`}>
+                    {prodiGrade.title}
+                  </span>
+                  <span className="text-[11px] text-slate-400">Predikat Simulasi</span>
+                </div>
+              </div>
 
+              {/* Card 2: Skor Validasi Asesor */}
+              <div className="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/80 backdrop-blur-sm relative overflow-hidden group hover:border-emerald-500/50 transition">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Skor Validasi Asesor
+                  </span>
+                  <div className="p-2 bg-emerald-600/20 text-emerald-400 rounded-lg">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold text-emerald-400 font-mono">{totalAssessorScore}</span>
+                  <span className="text-xs font-bold text-slate-400">/ 4.00</span>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-md text-xs font-extrabold ${assessorGrade.badgeColor}`}>
+                    {assessorGrade.title}
+                  </span>
+                  <span className="text-[11px] text-slate-400">Hasil Audit Lapangan</span>
+                </div>
+              </div>
+
+              {/* Card 3: Progres Pengisian LED */}
+              <div className="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/80 backdrop-blur-sm relative overflow-hidden group hover:border-indigo-500/50 transition">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Progres Narasi LED
+                  </span>
+                  <div className="p-2 bg-indigo-600/20 text-indigo-400 rounded-lg">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold text-white font-mono">{overallProgressPct}%</span>
+                  <span className="text-xs font-bold text-slate-400">
+                    ({totalCompletedElements} / {totalElementsCount} Elemen)
+                  </span>
+                </div>
+                <div className="mt-3 w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-indigo-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${overallProgressPct}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Card 4: Ketersediaan Berkas Digital */}
+              <div className="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/80 backdrop-blur-sm relative overflow-hidden group hover:border-amber-500/50 transition">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Bukti Digital Terhubung
+                  </span>
+                  <div className="p-2 bg-amber-600/20 text-amber-400 rounded-lg">
+                    <FolderSync className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold text-white font-mono">{evidences.length}</span>
+                  <span className="text-xs font-bold text-slate-400">Berkas Terverifikasi</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
+                  <span>Google Drive Sync:</span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Aktif
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Quick KPI Metric Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#DCE5F0] shadow-xs flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-xl bg-[#EBF3FC] text-[#054DA0] flex items-center justify-center text-xl shrink-0">
-                  <Layers className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-2xl font-extrabold text-[#032B5B] block leading-tight">
-                    9 / 9
-                  </span>
-                  <span className="text-xs text-[#5B6B82] font-semibold">Kriteria Terpetakan</span>
-                </div>
-              </div>
-
-              <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#DCE5F0] shadow-xs flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-xl bg-[#E8F7EE] text-[#0E9549] flex items-center justify-center text-xl shrink-0">
-                  <FileText className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-2xl font-extrabold text-[#032B5B] block leading-tight">
-                    92%
-                  </span>
-                  <span className="text-xs text-[#5B6B82] font-semibold">Kesiapan LED & LKPS</span>
-                </div>
-              </div>
-
-              <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#DCE5F0] shadow-xs flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-xl bg-[#FFFBEB] text-[#D97706] flex items-center justify-center text-xl shrink-0">
-                  <HardDrive className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-2xl font-extrabold text-[#032B5B] block leading-tight">
-                    {verifiedEvidenceCount} / {totalEvidenceCount}
-                  </span>
-                  <span className="text-xs text-[#5B6B82] font-semibold">Bukti Terverifikasi</span>
-                </div>
-              </div>
-
-              <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#DCE5F0] shadow-xs flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-xl bg-[#FEE4E2] text-[#DC2626] flex items-center justify-center text-xl shrink-0">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-2xl font-extrabold text-[#032B5B] block leading-tight">
-                    3 / 3
-                  </span>
-                  <span className="text-xs text-[#5B6B82] font-semibold">Syarat Perlu Lolos</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Visual Recharts Grid: Radar Chart + Bar Chart */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Radar Chart: Capaian vs Target Unggul (7 cols) */}
-              <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-[#DCE5F0] shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-[#EEF3F8] pb-3">
+            {/* Charts Row: Radar & Bar Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Radar Chart: Pemetaan 8 Kriteria */}
+              <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700/80 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-extrabold text-base text-[#032B5B] flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-[#054DA0]" />
-                      <span>Radar Capaian 9 Kriteria Akreditasi</span>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-blue-400" />
+                      <span>Diagram Radar 8 Kriteria LAM-PTKes 2025</span>
                     </h3>
-                    <p className="text-xs text-[#5B6B82]">
-                      Perbandingan Capaian Mandiri Tim PS vs Penilaian Asesor vs Target Unggul (3.75)
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Perbandingan Capaian Prodi vs Ambang Syarat Unggul (3.61)
                     </p>
                   </div>
+                  <span className="text-[11px] px-2 py-1 rounded bg-slate-700 text-slate-300 font-mono">
+                    8 Kriteria
+                  </span>
                 </div>
 
-                <div className="h-[320px] w-full">
+                <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarChartData}>
-                      <PolarGrid stroke="#DCE5F0" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#032B5B', fontSize: 11, fontWeight: 700 }} />
-                      <PolarRadiusAxis angle={30} domain={[2.0, 4.0]} tick={{ fill: '#5B6B82', fontSize: 10 }} />
-                      <Radar name="Capaian Tim PS" dataKey="Capaian" stroke="#054DA0" fill="#054DA0" fillOpacity={0.4} />
-                      <Radar name="Nilai Asesor" dataKey="Asesor" stroke="#D97706" fill="#D97706" fillOpacity={0.25} />
-                      <Radar name="Target Unggul" dataKey="TargetUnggul" stroke="#0E9549" strokeDasharray="3 3" fill="none" />
-                      <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-                      <Tooltip />
+                    <RadarChart data={radarChartData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                      <PolarGrid stroke="#334155" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 'bold' }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 10 }} />
+                      <Radar name="Skor Prodi" dataKey="SkorProdi" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.4} />
+                      <Radar name="Skor Asesor" dataKey="SkorAsesor" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
+                      <Radar name="Ambang Unggul (3.61)" dataKey="AmbangUnggul" stroke="#f59e0b" strokeDasharray="3 3" fill="none" />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#0f172a',
+                          borderColor: '#334155',
+                          borderRadius: '0.75rem',
+                          color: '#fff',
+                          fontSize: '12px',
+                        }}
+                      />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Bar Chart: Bobot vs Skor Tertimbang (5 cols) */}
-              <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-[#DCE5F0] shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-[#EEF3F8] pb-3">
+              {/* Bar Chart: Detail Skor & Bobot per Kriteria */}
+              <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700/80 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-extrabold text-base text-[#032B5B] flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-[#0E9549]" />
-                      <span>Skor Rata-Rata per Kriteria (1.0 - 4.0)</span>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-emerald-400" />
+                      <span>Distribusi Skor per Kriteria (K1 - K8)</span>
                     </h3>
-                    <p className="text-xs text-[#5B6B82]">
-                      Skor rata-rata indikator per kriteria instrumen
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Evaluasi Kinerja Komprehensif S2 Magister Kesehatan Masyarakat
                     </p>
                   </div>
+                  <span className="text-[11px] px-2 py-1 rounded bg-slate-700 text-slate-300 font-mono">
+                    Bobot 100%
+                  </span>
                 </div>
 
-                <div className="h-[320px] w-full">
+                <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#EEF3F8" />
-                      <XAxis dataKey="name" tick={{ fill: '#032B5B', fontSize: 11, fontWeight: 700 }} />
-                      <YAxis domain={[2.5, 4.0]} tick={{ fill: '#5B6B82', fontSize: 11 }} />
-                      <Tooltip formatter={(value: any) => [`${value} / 4.0`, 'Skor Rata-rata']} />
-                      <Bar dataKey="Skor" fill="#054DA0" radius={[6, 6, 0, 0]}>
-                        {barChartData.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={entry.Skor >= 3.75 ? '#0E9549' : entry.Skor >= 3.5 ? '#054DA0' : '#D97706'}
-                          />
-                        ))}
-                      </Bar>
+                    <BarChart data={barChartData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                      <YAxis domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 11 }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#0f172a',
+                          borderColor: '#334155',
+                          borderRadius: '0.75rem',
+                          color: '#fff',
+                          fontSize: '12px',
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      <Bar dataKey="Skor Prodi" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Skor Asesor" fill="#10b981" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-
             </div>
 
-            {/* Real-time Simulator Panel */}
-            <div className="bg-white p-6 rounded-2xl border border-[#DCE5F0] shadow-xs space-y-5">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#EEF3F8] pb-4">
+            {/* 8 Criteria Overview Cards Table */}
+            <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/80 shadow-xl">
+              <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h3 className="font-extrabold text-base text-[#032B5B] flex items-center gap-2">
-                    <Sliders className="w-5 h-5 text-[#054DA0]" />
-                    <span>Simulator Nilai Akreditasi Interaktif</span>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-blue-400" />
+                    <span>Rangkuman 8 Kriteria LAM-PTKes 2025</span>
                   </h3>
-                  <p className="text-xs text-[#5B6B82]">
-                    Geser slider nilai indikator untuk menguji sensitivitas skor agregat dan melihat dampak langsung terhadap predikat kelulusan akreditasi.
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Klik pada kriteria untuk langsung menyusun atau meninjau narasi Elemen Utama
                   </p>
                 </div>
-
-                {/* Preset Buttons */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => handleApplyPreset('unggul')}
-                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#E8F7EE] text-[#0E9549] hover:bg-[#d0f0dc] transition-colors border border-[#0E9549]/20"
-                  >
-                    Target Unggul (385.0)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyPreset('ambang')}
-                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#FEF3C7] text-[#92400E] hover:bg-[#fde68a] transition-colors border border-[#F59E0B]/20"
-                  >
-                    Ambang Baik Sekali (325.0)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyPreset('real')}
-                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#F4F7FC] text-[#5B6B82] hover:bg-[#EBF3FC] transition-colors border border-[#DCE5F0] flex items-center gap-1"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset Riil</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => setActiveTab('led_form')}
+                  className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition flex items-center gap-2 shadow-md"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Buka Form Penyusunan LED</span>
+                </button>
               </div>
 
-              {/* Sliders Grid for 9 Criteria */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {criteria.map((c) => {
-                  const currentCritScore = criteriaScores[c.id]?.adminScore ?? 3.5;
-                  const isSyarat = c.syaratPerlu;
-
-                  return (
-                    <div
-                      key={c.id}
-                      className={`p-4 rounded-xl border transition-all ${
-                        isSyarat
-                          ? 'border-[#054DA0]/30 bg-[#EBF3FC]/30'
-                          : 'border-[#DCE5F0] bg-[#F8FAFC]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-extrabold text-xs text-[#032B5B] flex items-center gap-1.5">
-                          <span className="px-1.5 py-0.5 rounded bg-white text-[#054DA0] border border-[#DCE5F0] font-mono">
-                            {c.code}
-                          </span>
-                          <span className="truncate max-w-[140px]" title={c.name}>
-                            {c.shortName}
-                          </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {criteriaScores.map((crit) => (
+                  <div
+                    key={crit.id}
+                    onClick={() => {
+                      setSelectedCritNumber(crit.number);
+                      setActiveTab('led_form');
+                    }}
+                    className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/60 transition cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-blue-900/50 text-blue-300 font-mono border border-blue-700/40">
+                          {crit.code}
                         </span>
-
-                        <span className="font-extrabold text-sm text-[#054DA0] font-mono">
-                          {currentCritScore.toFixed(2)}
+                        <span className="text-xs font-bold text-amber-400 font-mono">
+                          Bobot {crit.weight}%
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] text-[#5B6B82] mb-2 font-medium">
-                        <span>Bobot: <strong>{c.weight}%</strong></span>
-                        {isSyarat && (
-                          <span className="text-[10px] text-[#D97706] font-bold bg-[#FEF3C7] px-1.5 py-0.2 rounded">
-                            Syarat Perlu (≥ 3.5)
-                          </span>
-                        )}
+                      <h4 className="text-xs font-bold text-white group-hover:text-blue-300 transition line-clamp-1">
+                        {crit.name}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                        {crit.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-700/60">
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="text-slate-400">Skor / Asesor:</span>
+                        <span className="font-extrabold font-mono text-white">
+                          {crit.avgScore} <span className="text-emerald-400">/ {crit.assessorAvgScore}</span>
+                        </span>
                       </div>
 
-                      {/* Slider controls primary sub-indicator for quick test */}
-                      <input
-                        type="range"
-                        min="2.0"
-                        max="4.0"
-                        step="0.05"
-                        value={currentCritScore}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          // Distribute across all sub-indicators in this criterion
-                          c.subIndicators.forEach((s) => {
-                            handleUpdateIndicatorScore(c.id, s.id, val);
-                          });
-                        }}
-                        className="w-full h-1.5 bg-[#DCE5F0] rounded-lg appearance-none cursor-pointer accent-[#054DA0]"
-                      />
-
-                      <div className="flex justify-between text-[10px] text-[#5B6B82] mt-1 font-mono">
-                        <span>2.0 (Cukup)</span>
-                        <span>3.0 (Baik)</span>
-                        <span>4.0 (Unggul)</span>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                        <span>{crit.elementCount} Elemen Utama</span>
+                        <span className="font-mono text-blue-400 font-bold">{crit.progressPct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-blue-500 h-1.5 rounded-full"
+                          style={{ width: `${crit.progressPct}%` }}
+                        />
                       </div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =======================================================================
+            TAB 2: PENYUSUNAN LED (8 KRITERIA & 121 ELEMEN UTAMA)
+        ======================================================================= */}
+        {activeTab === 'led_form' && (
+          <div className="space-y-6">
+            {/* Criteria Selector Header Bar */}
+            <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 shadow-md">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">
+                Pilih Kriteria Akreditasi (Instrumen 8 Kriteria LAM-PTKes):
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                {LAMPTKES_CRITERIA.map((crit) => {
+                  const scoreInfo = criteriaScores.find((c) => c.id === crit.id);
+                  const isSelected = selectedCritNumber === crit.number;
+                  return (
+                    <button
+                      key={crit.id}
+                      onClick={() => setSelectedCritNumber(crit.number)}
+                      className={`p-3 rounded-xl text-left transition border flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-400 shadow-lg scale-[1.02]'
+                          : 'bg-slate-900/60 text-slate-300 border-slate-800 hover:bg-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black font-mono">{crit.code}</span>
+                          <span className={`text-[10px] font-bold ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                            {crit.weight}%
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold block mt-1 line-clamp-1">
+                          {crit.shortName}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-[10px] flex items-center justify-between opacity-90 font-mono">
+                        <span>{scoreInfo?.avgScore || 3.8}</span>
+                        <span>{scoreInfo?.progressPct || 100}%</span>
+                      </div>
+                    </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Syarat Perlu Compliance Card */}
-            <div className="bg-white p-6 rounded-2xl border border-[#DCE5F0] shadow-xs space-y-4">
-              <h3 className="font-extrabold text-base text-[#032B5B] flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-[#0E9549]" />
-                <span>Status Pemenuhan Syarat Perlu Peringkat Akreditasi Unggul</span>
-              </h3>
+            {/* Sub-Criteria Navigation & Search Bar */}
+            <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/80 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+              {/* Sub-Criteria Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                <span className="text-xs font-bold text-slate-400 whitespace-nowrap">Sub-Kriteria:</span>
+                {activeCriterion.subCriteria.map((sub) => {
+                  const isSubSelected = selectedSubCritCode === sub.code;
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => {
+                        setSelectedSubCritCode(sub.code);
+                        if (sub.elementCodes.length > 0) {
+                          setSelectedElementCode(sub.elementCodes[0]);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition border ${
+                        isSubSelected
+                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>{sub.code} {sub.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                <div className="p-4 rounded-xl border border-[#E8F7EE] bg-[#E8F7EE]/30 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#0E9549]">Kriteria 4: SDM Dosen (Doktor)</span>
-                    <CheckCircle2 className="w-4 h-4 text-[#0E9549]" />
-                  </div>
-                  <p className="text-xs text-[#16202E]">
-                    Skor: <strong>{criteriaScores[4]?.adminScore.toFixed(2)} / 3.50</strong> minimal
-                  </p>
-                  <p className="text-[11px] text-[#5B6B82]">
-                    Persentase DTPS bergelar Doktor 68% (Target LAM-PTKes ≥ 50%).
-                  </p>
+              {/* Search Element Code / Keyword */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={elementSearchQuery}
+                    onChange={(e) => setElementSearchQuery(e.target.value)}
+                    placeholder="Cari kode (misal 2.1.3)..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                  {elementSearchQuery && (
+                    <button
+                      onClick={() => setElementSearchQuery('')}
+                      className="absolute right-2.5 top-2 text-slate-400 hover:text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
-                <div className="p-4 rounded-xl border border-[#E8F7EE] bg-[#E8F7EE]/30 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#0E9549]">Kriteria 6: Kurikulum & Pembelajaran</span>
-                    <CheckCircle2 className="w-4 h-4 text-[#0E9549]" />
-                  </div>
-                  <p className="text-xs text-[#16202E]">
-                    Skor: <strong>{criteriaScores[6]?.adminScore.toFixed(2)} / 3.50</strong> minimal
-                  </p>
-                  <p className="text-[11px] text-[#5B6B82]">
-                    Kurikulum OBE terstruktur dan integrasi riset tesis termonitoring rapi.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl border border-[#E8F7EE] bg-[#E8F7EE]/30 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#0E9549]">Kriteria 9: Luaran & Publikasi Scopus</span>
-                    <CheckCircle2 className="w-4 h-4 text-[#0E9549]" />
-                  </div>
-                  <p className="text-xs text-[#16202E]">
-                    Skor: <strong>{criteriaScores[9]?.adminScore.toFixed(2)} / 3.50</strong> minimal
-                  </p>
-                  <p className="text-[11px] text-[#5B6B82]">
-                    Rata-rata IPK lulusan 3.82 dan publikasi jurnal terakreditasi melampaui target.
-                  </p>
-                </div>
-
+                <select
+                  value={elementStatusFilter}
+                  onChange={(e) => setElementStatusFilter(e.target.value as any)}
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="Final">Final</option>
+                  <option value="Review">Review</option>
+                  <option value="Draft">Draft</option>
+                </select>
               </div>
             </div>
 
+            {/* Split Screen Layout: Element Navigation on Left, Full Editor on Right */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Column: Element List Selection */}
+              <div className="lg:col-span-4 space-y-2 max-h-[800px] overflow-y-auto pr-1">
+                <div className="flex items-center justify-between text-xs text-slate-400 px-1 pb-1">
+                  <span className="font-bold">Daftar Elemen ({filteredElements.length})</span>
+                  <span>Kriteria {activeCriterion.number}</span>
+                </div>
+
+                {filteredElements.map((el) => {
+                  const ans = answers[el.code];
+                  const isSelected = selectedElementCode === el.code;
+                  const complianceCount = el.complianceItems.length;
+                  const checkedCount = Object.values(ans?.complianceChecked || {}).filter(Boolean).length;
+
+                  return (
+                    <div
+                      key={el.id}
+                      onClick={() => setSelectedElementCode(el.code)}
+                      className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-blue-900/40 border-blue-500 shadow-md ring-1 ring-blue-500'
+                          : 'bg-slate-800/60 border-slate-700/80 hover:bg-slate-800 hover:border-slate-600'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-black font-mono text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/40">
+                            {el.code}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              ans?.status === 'Final'
+                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/50'
+                                : ans?.status === 'Review'
+                                ? 'bg-amber-950 text-amber-300 border border-amber-800/50'
+                                : 'bg-slate-700 text-slate-300'
+                            }`}
+                          >
+                            {ans?.status || 'Draft'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-200 line-clamp-2">
+                          {el.question}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-700/50 flex items-center justify-between text-[11px] text-slate-400">
+                        <span className="flex items-center gap-1 font-mono">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          {checkedCount}/{complianceCount} Butir
+                        </span>
+                        <span className="font-extrabold text-white font-mono">
+                          Skor: {ans?.score.toFixed(2) || '3.80'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {filteredElements.length === 0 && (
+                  <div className="p-8 text-center bg-slate-800/40 rounded-xl border border-slate-700 text-slate-400 text-xs">
+                    Tidak ada elemen yang cocok dengan pencarian "{elementSearchQuery}".
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Full Element LED Editor */}
+              <div className="lg:col-span-8 space-y-6">
+                {activeElement ? (
+                  <div className="p-6 rounded-2xl bg-slate-800/70 border border-slate-700/80 shadow-xl space-y-6">
+                    {/* Element Header & Meta */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-700/70">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black font-mono px-3 py-1 rounded-lg bg-blue-600 text-white shadow-sm">
+                            Elemen {activeElement.code}
+                          </span>
+                          <span className="text-xs font-bold text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded-md border border-amber-800/40">
+                            {activeCriterion.shortName} · Kriteria {activeCriterion.number}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            Versi {answers[activeElement.code]?.version || 1}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Penulis: <span className="text-slate-200 font-semibold">{answers[activeElement.code]?.author || 'Dr. Rochmawati, S.KM., M.Kes.'}</span> · Terakhir disimpan: <span className="text-slate-200 font-mono">{answers[activeElement.code]?.lastUpdated || '2026-10-27 10:00'}</span>
+                        </p>
+                      </div>
+
+                      {/* Status Selector & Score Input */}
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <label className="text-[11px] text-slate-400 block mb-0.5">Status LED:</label>
+                          <select
+                            value={answers[activeElement.code]?.status || 'Draft'}
+                            onChange={(e) => handleUpdateStatus(activeElement.code, e.target.value as any)}
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="Draft">Draft</option>
+                            <option value="Review">Review</option>
+                            <option value="Final">Final</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] text-slate-400 block mb-0.5">Skor Mandiri (1-4):</label>
+                          <input
+                            type="number"
+                            step="0.05"
+                            min="1.0"
+                            max="4.0"
+                            value={answers[activeElement.code]?.score || 3.8}
+                            onChange={(e) => handleUpdateScore(activeElement.code, parseFloat(e.target.value) || 3.8)}
+                            className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono font-bold text-center text-blue-400 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Question (Elemen Utama) Box */}
+                    <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-700">
+                      <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider block mb-1">
+                        Elemen Utama (Pertanyaan Instrumen LAM-PTKes):
+                      </span>
+                      <p className="text-sm font-bold text-white leading-relaxed">
+                        {activeElement.question}
+                      </p>
+                      {activeElement.benchmark && (
+                        <div className="mt-2 text-xs text-slate-400 flex items-center gap-1.5">
+                          <Info className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Standar Rujukan: <strong className="text-slate-300">{activeElement.benchmark}</strong></span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Panduan Sub-Kriteria (Guidance Panel) */}
+                    <details className="rounded-xl bg-indigo-950/30 border border-indigo-800/40 p-3 group">
+                      <summary className="text-xs font-bold text-indigo-300 cursor-pointer flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <HelpCircle className="w-4 h-4 text-indigo-400" />
+                          <span>Panduan Sub-Kriteria & Siklus PPEPP (Klik untuk membaca)</span>
+                        </span>
+                        <ChevronDown className="w-4 h-4 group-open:rotate-180 transition" />
+                      </summary>
+                      <div className="mt-3 text-xs text-slate-300 leading-relaxed border-t border-indigo-900/50 pt-2 space-y-2">
+                        <p>
+                          <strong>Sub-Kriteria {selectedSubCritCode}:</strong> {activeCriterion.subCriteria.find((s) => s.code === selectedSubCritCode)?.guidanceText || activeCriterion.description}
+                        </p>
+                        <p className="text-[11px] text-indigo-300">
+                          <strong>Siklus PPEPP LAM-PTKes:</strong> Pastikan narasi menguraikan aspek Penetapan (kebijakan/SK), Pelaksanaan (bukti implementasi riil), Evaluasi (capaian target IKU/IKT), Pengendalian (tindakan atas kendala), dan Peningkatan (benchmarking & standar baru).
+                        </p>
+                      </div>
+                    </details>
+
+                    {/* Butir Pemenuhan Standar (Checklist) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <span>Butir / Indikator Pemenuhan terhadap Elemen Utama:</span>
+                        </span>
+                        <span className="text-xs text-slate-400 font-mono">
+                          {Object.values(answers[activeElement.code]?.complianceChecked || {}).filter(Boolean).length} / {activeElement.complianceItems.length} Terpenuhi
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {activeElement.complianceItems.map((item) => {
+                          const isChecked = !!answers[activeElement.code]?.complianceChecked?.[item.order];
+                          return (
+                            <label
+                              key={item.id}
+                              className={`flex items-start gap-3 p-3 rounded-xl border transition cursor-pointer ${
+                                isChecked
+                                  ? 'bg-emerald-950/30 border-emerald-800/50 text-slate-200'
+                                  : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleToggleCompliance(activeElement.code, item.order)}
+                                className="mt-0.5 h-4 w-4 rounded border-slate-700 text-emerald-600 focus:ring-emerald-500 bg-slate-900 cursor-pointer"
+                              />
+                              <span className="text-xs leading-relaxed">{item.text}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Narasi Evaluasi Diri (LED Textarea) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                          <Edit3 className="w-4 h-4 text-blue-400" />
+                          <span>Narasi Evaluasi Diri (Jawaban Komprehensif Program Studi):</span>
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {answers[activeElement.code]?.narrative?.length || 0} Karakter
+                        </span>
+                      </div>
+
+                      <textarea
+                        rows={7}
+                        value={answers[activeElement.code]?.narrative || ''}
+                        onChange={(e) => handleUpdateNarrative(activeElement.code, e.target.value)}
+                        placeholder="Uraikan evaluasi diri program studi secara analitis mencakup kebijakan, pelaksanaan, evaluasi kendala, dan rencana perbaikan berkelanjutan..."
+                        className="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-4 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 leading-relaxed font-sans"
+                      />
+                    </div>
+
+                    {/* Dokumen Pendukung & Bukti Tertaut */}
+                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-700 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                          <FolderSync className="w-4 h-4 text-amber-400" />
+                          <span>Tautan Dokumen Pendukung & Bukti Sahih:</span>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={masterGdriveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800/60 rounded-lg hover:bg-emerald-900 transition flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Buka G-Drive</span>
+                          </a>
+                          <button
+                            onClick={() => {
+                              setNewEvCritId(activeCriterion.number);
+                              setNewEvElementCode(activeElement.code);
+                              setIsAddEvidenceOpen(true);
+                            }}
+                            className="px-2.5 py-1 text-[11px] font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition flex items-center gap-1 shadow-sm"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Tautkan Berkas</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Display Evidences Linked to this Criterion / Element */}
+                      <div className="space-y-1.5">
+                        {evidences
+                          .filter((ev) => ev.criterionId === activeCriterion.number)
+                          .slice(0, 3)
+                          .map((ev) => (
+                            <div
+                              key={ev.id}
+                              className="p-2.5 rounded-lg bg-slate-800/70 border border-slate-700/60 flex items-center justify-between text-xs"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-3.5 h-3.5 text-blue-400" />
+                                <div>
+                                  <span className="font-semibold text-slate-200 block">{ev.title}</span>
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    {ev.code} · {ev.fileType} · {ev.fileSize}
+                                  </span>
+                                </div>
+                              </div>
+                              <a
+                                href={ev.cloudUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 text-[10px] font-semibold bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Lihat</span>
+                              </a>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Mode Asesor Section (Audit & Feedbacks) */}
+                    {activeRole === 'assessor' && (
+                      <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-600/50 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            <span>Lembar Penilaian Asesor Audit (Elemen {activeElement.code})</span>
+                          </span>
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-emerald-900/60 text-emerald-200 border border-emerald-700/40">
+                            Mode Asesor Aktif
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                              Skor Asesor (Skala 1.0 - 4.0):
+                            </label>
+                            <input
+                              type="number"
+                              step="0.05"
+                              min="1.0"
+                              max="4.0"
+                              defaultValue={answers[activeElement.code]?.assessorScore || answers[activeElement.code]?.score || 3.8}
+                              id={`assessor-score-${activeElement.code}`}
+                              className="w-full bg-slate-900 border border-emerald-600/60 rounded-lg p-2 text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-400"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                              Status Validasi Asesor:
+                            </label>
+                            <select
+                              defaultValue={answers[activeElement.code]?.assessorStatus || 'Disetujui'}
+                              id={`assessor-status-${activeElement.code}`}
+                              className="w-full bg-slate-900 border border-emerald-600/60 rounded-lg p-2 text-xs font-bold text-white focus:outline-none focus:border-emerald-400"
+                            >
+                              <option value="Disetujui">Disetujui (Memenuhi Standar)</option>
+                              <option value="Perlu Perbaikan">Perlu Perbaikan Bukti</option>
+                              <option value="Belum Dinilai">Belum Dinilai</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                            Catatan Deskriptif & Rekomendasi Asesor:
+                          </label>
+                          <textarea
+                            rows={3}
+                            defaultValue={answers[activeElement.code]?.assessorNotes || 'Bukti sahih lengkap dan narasi sangat komprehensif.'}
+                            id={`assessor-notes-${activeElement.code}`}
+                            placeholder="Tuliskan catatan kualitatif, temuan audit lapangan, atau rekomendasi peningkatan..."
+                            className="w-full bg-slate-900 border border-emerald-600/60 rounded-lg p-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-400"
+                          />
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => {
+                              const scoreVal = parseFloat((document.getElementById(`assessor-score-${activeElement.code}`) as HTMLInputElement)?.value) || 3.8;
+                              const statusVal = (document.getElementById(`assessor-status-${activeElement.code}`) as HTMLSelectElement)?.value as any || 'Disetujui';
+                              const notesVal = (document.getElementById(`assessor-notes-${activeElement.code}`) as HTMLTextAreaElement)?.value || '';
+                              handleUpdateAssessorReview(activeElement.code, scoreVal, notesVal, statusVal);
+                            }}
+                            className="px-4 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition shadow-md flex items-center gap-1.5"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                            <span>Simpan Penilaian Asesor</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-12 text-center bg-slate-800/40 rounded-2xl border border-slate-700 text-slate-400">
+                    Pilih elemen di sebelah kiri untuk melihat dan menyusun Laporan Evaluasi Diri.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ============================================================
-            MODULE 2: PEMETAAN 9 KRITERIA (BAN-PT / LAM-PTKes)
-            ============================================================ */}
-        {activeTab === 'criteria' && (
+        {/* =======================================================================
+            TAB 3: REPOSITORI BERKAS & DOKUMEN PENDUKUNG (TIDAK TERBATAS)
+        ======================================================================= */}
+        {activeTab === 'repository' && (
           <div className="space-y-6">
-            
-            {/* Criteria Overview Bar */}
-            <div className="bg-white p-5 rounded-2xl border border-[#DCE5F0] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            {/* Top Repository Actions Bar */}
+            <div className="p-6 rounded-2xl bg-slate-800/70 border border-slate-700 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h3 className="font-extrabold text-lg text-[#032B5B]">
-                  Pemetaan 9 Kriteria Instrumen Akreditasi Program Studi (IAPS)
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <FolderSync className="w-5 h-5 text-blue-400" />
+                  <span>Repositori Dokumen Pendukung & Bukti Digital LAM-PTKes</span>
                 </h3>
-                <p className="text-xs text-[#5B6B82]">
-                  Laporan Evaluasi Diri (LED), Laporan Kinerja Program Studi (LKPS), ketersediaan berkas bukti, dan PIC penanggung jawab kriteria.
+                <p className="text-xs text-slate-400 mt-1">
+                  Folder Cloud Terpadu: <a href={masterGdriveUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline font-mono">{masterGdriveUrl}</a>
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  type="button"
-                  onClick={() => setExpandedCriteriaIds([1, 2, 3, 4, 5, 6, 7, 8, 9])}
-                  className="px-3 py-1.5 text-xs font-bold text-[#054DA0] bg-[#EBF3FC] rounded-lg hover:bg-[#d5e7fc] transition-colors"
+                  onClick={() => setIsAddCustomDocOpen(true)}
+                  className="px-3.5 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5"
                 >
-                  Buka Semua
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setExpandedCriteriaIds([])}
-                  className="px-3 py-1.5 text-xs font-bold text-[#5B6B82] bg-[#F4F7FC] rounded-lg hover:bg-[#EBF3FC] transition-colors"
-                >
-                  Tutup Semua
-                </button>
-              </div>
-            </div>
-
-            {/* Accordion List for 9 Criteria */}
-            <div className="space-y-4">
-              {criteria.map((crit) => {
-                const isExpanded = expandedCriteriaIds.includes(crit.id);
-                const avgScore = criteriaScores[crit.id]?.adminScore ?? 3.5;
-                const totalSub = crit.subIndicators.length;
-                const lengkapSub = crit.subIndicators.filter((s) => s.status === 'Lengkap').length;
-                const progressPct = Math.round((lengkapSub / totalSub) * 100);
-
-                return (
-                  <div
-                    key={crit.id}
-                    className="bg-white rounded-2xl border border-[#DCE5F0] shadow-xs overflow-hidden transition-all"
-                  >
-                    {/* Criterion Header Clickable */}
-                    <div
-                      onClick={() => toggleCriterionAccordion(crit.id)}
-                      className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-[#F8FAFC] transition-colors select-none"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <div
-                          className="w-12 h-12 rounded-xl text-white font-extrabold flex items-center justify-center text-sm shadow-xs shrink-0"
-                          style={{ backgroundColor: crit.color }}
-                        >
-                          {crit.code}
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-extrabold text-base text-[#032B5B]">
-                              Kriteria {crit.id}: {crit.name}
-                            </h4>
-                            {crit.syaratPerlu && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]/20">
-                                Syarat Perlu
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-[#5B6B82] mt-0.5">
-                            Bobot: <strong>{crit.weight}%</strong> · {totalSub} Sub-Indikator Instrumen
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Header Right Status Badges */}
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <span className="text-xs text-[#5B6B82] block">Skor Kriteria:</span>
-                          <span className="font-extrabold text-base text-[#054DA0] font-mono">
-                            {avgScore.toFixed(2)} / 4.0
-                          </span>
-                        </div>
-
-                        <div className="hidden md:block w-28 bg-[#EEF3F8] rounded-full h-2.5 overflow-hidden">
-                          <div
-                            className="bg-[#0E9549] h-2.5 rounded-full transition-all"
-                            style={{ width: `${progressPct}%` }}
-                          />
-                        </div>
-
-                        <div className="p-1 rounded-lg bg-[#F4F7FC] text-[#5B6B82]">
-                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Sub-Indicators Table (Expanded) */}
-                    {isExpanded && (
-                      <div className="border-t border-[#EEF3F8] p-5 bg-[#FAFBFD] space-y-4">
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-xs">
-                            <thead>
-                              <tr className="border-b border-[#DCE5F0] text-[#5B6B82] uppercase text-[10px] font-bold tracking-wider">
-                                <th className="pb-3 px-3">Kode & Indikator</th>
-                                <th className="pb-3 px-3">Bobot</th>
-                                <th className="pb-3 px-3">Status Dokumen</th>
-                                <th className="pb-3 px-3">LED / LKPS</th>
-                                <th className="pb-3 px-3">Bukti Digital</th>
-                                <th className="pb-3 px-3">Skor Tim</th>
-                                <th className="pb-3 px-3">PIC</th>
-                                <th className="pb-3 px-3 text-right">Aksi</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#EEF3F8]">
-                              {crit.subIndicators.map((sub) => (
-                                <tr key={sub.id} className="hover:bg-white transition-colors">
-                                  
-                                  {/* Kode & Judul */}
-                                  <td className="py-3 px-3 max-w-xs">
-                                    <span className="font-extrabold text-[#032B5B] block font-mono">
-                                      {sub.code}
-                                    </span>
-                                    <span className="font-semibold text-slate-800 block text-xs">
-                                      {sub.title}
-                                    </span>
-                                    <span className="text-[11px] text-[#5B6B82] line-clamp-1 mt-0.5">
-                                      {sub.desc}
-                                    </span>
-                                  </td>
-
-                                  {/* Bobot */}
-                                  <td className="py-3 px-3 font-mono font-bold text-slate-700">
-                                    {sub.weight}%
-                                  </td>
-
-                                  {/* Status Kesiapan */}
-                                  <td className="py-3 px-3">
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                      sub.status === 'Lengkap'
-                                        ? 'bg-[#E8F7EE] text-[#0E9549]'
-                                        : sub.status === 'Review'
-                                        ? 'bg-[#FFFBEB] text-[#D97706]'
-                                        : 'bg-[#FEE4E2] text-[#DC2626]'
-                                    }`}>
-                                      {sub.status}
-                                    </span>
-                                  </td>
-
-                                  {/* LED / LKPS */}
-                                  <td className="py-3 px-3">
-                                    <div className="space-y-1">
-                                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-medium block">
-                                        LED: <strong>{sub.ledStatus}</strong>
-                                      </span>
-                                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-medium block">
-                                        LKPS: <strong>{sub.lkpsStatus}</strong>
-                                      </span>
-                                    </div>
-                                  </td>
-
-                                  {/* Bukti Digital Indicator */}
-                                  <td className="py-3 px-3">
-                                    <div className="flex items-center gap-1.5">
-                                      <FolderSync className="w-3.5 h-3.5 text-[#054DA0]" />
-                                      <span className="font-mono font-bold text-slate-800">
-                                        {sub.evidenceCount} / {sub.evidenceTarget}
-                                      </span>
-                                      {sub.evidenceCount >= sub.evidenceTarget && (
-                                        <Check className="w-3.5 h-3.5 text-[#0E9549]" />
-                                      )}
-                                    </div>
-                                  </td>
-
-                                  {/* Skor Tim PS */}
-                                  <td className="py-3 px-3 font-mono font-extrabold text-[#054DA0] text-sm">
-                                    {sub.score.toFixed(2)}
-                                  </td>
-
-                                  {/* PIC */}
-                                  <td className="py-3 px-3 text-[#5B6B82] font-medium text-[11px] whitespace-nowrap">
-                                    {sub.pic}
-                                  </td>
-
-                                  {/* Actions */}
-                                  <td className="py-3 px-3 text-right">
-                                    <div className="flex items-center justify-end gap-1.5">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveTab('repository');
-                                          setEvidenceFilterCrit(crit.id);
-                                          setEvidenceSearch(sub.code);
-                                        }}
-                                        className="p-1.5 rounded-lg text-[#054DA0] hover:bg-[#EBF3FC] transition-colors"
-                                        title="Buka Berkas Bukti Indikator Ini"
-                                      >
-                                        <Eye className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveTab('assessment_sheet');
-                                          setSelectedCriterionId(crit.id);
-                                        }}
-                                        className="p-1.5 rounded-lg text-[#D97706] hover:bg-[#FFFBEB] transition-colors"
-                                        title="Buka Lembar Asesmen"
-                                      >
-                                        <Edit3 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </td>
-
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
-        )}
-
-        {/* ============================================================
-            MODULE 3: REPOSITORY BUKTI DIGITAL (CLOUD DRIVE & UPLOAD)
-            ============================================================ */}
-        {activeTab === 'repository' && (
-          <div className="bg-white p-6 rounded-2xl border border-[#DCE5F0] shadow-xs space-y-6">
-            
-            {/* Header Repository & Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#EEF3F8] pb-5">
-              <div>
-                <h3 className="font-extrabold text-lg text-[#032B5B] flex items-center gap-2">
-                  <HardDrive className="w-5 h-5 text-[#054DA0]" />
-                  <span>Repository Bukti Digital Akreditasi (Cloud Storage)</span>
-                </h3>
-                <p className="text-xs text-[#5B6B82]">
-                  Pusat arsip berkas bukti akreditasi terintegrasi Google Drive, OneDrive, dan berkas pendukung simulasi.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setIsAddEvidenceOpen(true)}
-                  className="px-3.5 py-2 text-xs font-bold bg-[#054DA0] hover:bg-[#032B5B] text-white rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Tambah Tautan Cloud</span>
+                  <Plus className="w-4 h-4 text-amber-400" />
+                  <span>Tambah Jenis Dokumen Pendukung</span>
                 </button>
 
                 <button
-                  type="button"
-                  onClick={() => setIsSimUploadOpen(true)}
-                  className="px-3.5 py-2 text-xs font-bold bg-[#E8F7EE] hover:bg-[#d5f3df] text-[#0E9549] rounded-xl transition-all flex items-center gap-1.5 border border-[#0E9549]/20"
+                  onClick={() => {
+                    setNewEvCritId(selectedCritNumber);
+                    setIsAddEvidenceOpen(true);
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition flex items-center gap-1.5 shadow-md"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>Upload Berkas Pendukung</span>
+                  <span>Unggah / Tautkan Bukti</span>
                 </button>
               </div>
             </div>
 
-            {/* Filters Toolbar */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-              
-              {/* Search input (5 cols) */}
-              <div className="md:col-span-5 relative">
-                <Search className="w-4 h-4 text-[#5B6B82] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={evidenceSearch}
-                  onChange={(e) => setEvidenceSearch(e.target.value)}
-                  placeholder="Cari nama bukti, kode (BKT-C1), indikator…"
-                  className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-[#DCE5F0] bg-[#F8FAFC] focus:bg-white focus:outline-none focus:border-[#054DA0]"
-                />
-              </div>
+            {/* Dokumen Pendukung Wajib LAM-PTKes Acuan Buku III */}
+            <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700/80 shadow-md">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <FileCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Daftar Dokumen Pendukung Kriteria {activeCriterion.number} ({activeCriterion.name})</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Sifat dokumen "tidak terbatas pada daftar", program studi dapat menambahkan jenis dokumen pendukung baru sesuai kebutuhan.
+                  </p>
+                </div>
 
-              {/* Filter Criterion (4 cols) */}
-              <div className="md:col-span-4">
+                {/* Criterion selector */}
                 <select
-                  value={evidenceFilterCrit}
-                  onChange={(e) => setEvidenceFilterCrit(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#DCE5F0] bg-[#F8FAFC] focus:bg-white focus:outline-none focus:border-[#054DA0]"
+                  value={selectedCritNumber}
+                  onChange={(e) => setSelectedCritNumber(Number(e.target.value))}
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500"
                 >
-                  <option value="all">Semua Kriteria (C1 - C9)</option>
-                  {criteria.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.code}: {c.shortName}
+                  {LAMPTKES_CRITERIA.map((c) => (
+                    <option key={c.id} value={c.number}>
+                      {c.code} - {c.shortName}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Filter File Type (3 cols) */}
-              <div className="md:col-span-3">
-                <select
-                  value={evidenceFilterType}
-                  onChange={(e) => setEvidenceFilterType(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#DCE5F0] bg-[#F8FAFC] focus:bg-white focus:outline-none focus:border-[#054DA0]"
-                >
-                  <option value="all">Semua Tipe Dokumen</option>
-                  <option value="SK">SK Rektor / Dekan</option>
-                  <option value="Pedoman/SOP">Pedoman & SOP</option>
-                  <option value="Laporan">Laporan Kinerja / AMI</option>
-                  <option value="MoA/MoU">MoU / MoA Kerjasama</option>
-                  <option value="Sertifikat">Sertifikat & Akreditasi</option>
-                  <option value="Borang LKPS">Borang LKPS</option>
-                </select>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {currentCriterionSupportingDocs.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/40">
+                          {doc.code}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            doc.isMandatory
+                              ? 'bg-rose-950/60 text-rose-300 border border-rose-800/40'
+                              : 'bg-slate-800 text-slate-400'
+                          }`}
+                        >
+                          {doc.isMandatory ? 'Wajib LAM-PTKes' : 'Opsional'}
+                        </span>
+                      </div>
 
+                      <h5 className="text-xs font-bold text-white">{doc.name}</h5>
+                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-3 leading-relaxed">
+                        {doc.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500 font-semibold">{doc.category}</span>
+                      <a
+                        href={masterGdriveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-lg transition flex items-center gap-1 border border-slate-700"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Buka di G-Drive</span>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Evidences Table List */}
-            {filteredEvidences.length > 0 ? (
-              <div className="overflow-x-auto border border-[#DCE5F0] rounded-xl">
+            {/* Tabel Berkas Bukti Digital Sahih */}
+            <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700/80 shadow-md">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <HardDrive className="w-4 h-4 text-blue-400" />
+                  <span>Daftar Berkas Bukti Sahih Tersimpan ({evidences.length} Berkas)</span>
+                </h4>
+              </div>
+
+              <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#F8FAFC] text-[#5B6B82] uppercase text-[10px] font-bold border-b border-[#DCE5F0]">
+                  <thead className="bg-slate-900/80 text-slate-400 border-b border-slate-700">
                     <tr>
-                      <th className="py-3 px-4">Kode Bukti</th>
-                      <th className="py-3 px-4">Judul Dokumen & Indikator</th>
-                      <th className="py-3 px-4">Tipe Berkas</th>
-                      <th className="py-3 px-4">Penyedia Cloud</th>
-                      <th className="py-3 px-4">Ukuran</th>
-                      <th className="py-3 px-4">Status Verifikasi</th>
-                      <th className="py-3 px-4 text-right">Aksi</th>
+                      <th className="p-3">Kode Bukti</th>
+                      <th className="p-3">Judul Berkas & Elemen</th>
+                      <th className="p-3">Kriteria</th>
+                      <th className="p-3">Penyedia Cloud</th>
+                      <th className="p-3">Ukuran & Tanggal</th>
+                      <th className="p-3">Status Verifikasi</th>
+                      <th className="p-3 text-right">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#EEF3F8]">
-                    {filteredEvidences.map((ev) => (
-                      <tr key={ev.id} className="hover:bg-[#FAFBFD] transition-colors">
-                        
-                        {/* Kode */}
-                        <td className="py-3 px-4 font-mono font-bold text-[#054DA0]">
-                          {ev.code}
-                        </td>
-
-                        {/* Judul & Indikator */}
-                        <td className="py-3 px-4 max-w-sm">
-                          <span className="font-bold text-slate-900 block text-xs">
-                            {ev.title}
-                          </span>
-                          <span className="text-[11px] text-[#5B6B82] font-mono mt-0.5 block">
-                            Indikator: <strong>{ev.indicatorCode}</strong> (Kriteria {ev.criterionId}) · Oleh {ev.uploader}
+                  <tbody className="divide-y divide-slate-800">
+                    {evidences.map((ev) => (
+                      <tr key={ev.id} className="hover:bg-slate-800/50 transition">
+                        <td className="p-3 font-mono font-bold text-blue-400">{ev.code}</td>
+                        <td className="p-3">
+                          <span className="font-semibold text-white block">{ev.title}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            Elemen: {ev.elementCode || 'Kriteria Umum'} · Pengunggah: {ev.uploader}
                           </span>
                         </td>
-
-                        {/* Tipe Dokumen */}
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF3FC] text-[#054DA0]">
-                            {ev.fileType}
+                        <td className="p-3 font-mono text-slate-300">Kriteria {ev.criterionId}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded bg-slate-900 text-emerald-400 border border-slate-700 font-semibold text-[11px]">
+                            {ev.cloudProvider}
                           </span>
                         </td>
-
-                        {/* Cloud Provider */}
-                        <td className="py-3 px-4">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700">
-                            {ev.cloudProvider === 'Google Drive' ? '📁 Google Drive' : '☁️ OneDrive'}
+                        <td className="p-3 text-slate-400 font-mono text-[11px]">
+                          {ev.fileSize} · {ev.uploadDate}
+                        </td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800/50 flex items-center gap-1 w-fit">
+                            <Check className="w-3 h-3" /> Terverifikasi
                           </span>
                         </td>
-
-                        {/* Ukuran & Tanggal */}
-                        <td className="py-3 px-4 text-[11px] text-[#5B6B82] font-mono">
-                          {ev.fileSize}
-                        </td>
-
-                        {/* Status Verifikasi Asesor */}
-                        <td className="py-3 px-4">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleVerifyEvidence(ev.id)}
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all ${
-                              ev.verified
-                                ? 'bg-[#E8F7EE] text-[#0E9549] hover:bg-[#d2f3dc]'
-                                : 'bg-[#FEF3C7] text-[#92400E] hover:bg-[#fde68a]'
-                            }`}
-                            title="Klik untuk ubah verifikasi"
+                        <td className="p-3 text-right">
+                          <a
+                            href={ev.cloudUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 text-xs font-semibold bg-blue-600/20 text-blue-300 hover:bg-blue-600 hover:text-white rounded-lg transition inline-flex items-center gap-1 border border-blue-500/30"
                           >
-                            {ev.verified ? (
-                              <>
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Terverifikasi</span>
-                              </>
-                            ) : (
-                              <>
-                                <Clock className="w-3 h-3" />
-                                <span>Menunggu Review</span>
-                              </>
-                            )}
-                          </button>
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Akses</span>
+                          </a>
                         </td>
-
-                        {/* Aksi Tautan */}
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <a
-                              href={ev.cloudUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-2.5 py-1 text-xs font-bold text-[#054DA0] bg-[#EBF3FC] hover:bg-[#d7ebfe] rounded-lg transition-colors inline-flex items-center gap-1"
-                            >
-                              <span>Buka ↗</span>
-                            </a>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard?.writeText(ev.cloudUrl);
-                                showToast('Tautan cloud berhasil disalin!');
-                              }}
-                              className="p-1.5 text-[#5B6B82] hover:text-[#032B5B] rounded-lg hover:bg-slate-100"
-                              title="Salin Tautan"
-                            >
-                              <Copy className="w-3.5 h-3.5" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteEvidence(ev.id)}
-                              className="p-1.5 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-50"
-                              title="Hapus Bukti"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <div className="text-center py-12 text-[#5B6B82] space-y-2 border border-dashed border-[#DCE5F0] rounded-xl">
-                <Search className="w-8 h-8 mx-auto text-[#054DA0]/40" />
-                <p className="font-bold text-sm text-[#032B5B]">Tidak ada bukti digital yang sesuai filter</p>
-                <p className="text-xs">Coba gunakan kata kunci lain atau klik "Tambah Tautan Cloud" di atas.</p>
-              </div>
-            )}
-
+            </div>
           </div>
         )}
 
-        {/* ============================================================
-            MODULE 4: LEMBAR ASESMEN ASESOR (ASESOR MODE AUDIT)
-            ============================================================ */}
-        {activeTab === 'assessment_sheet' && (
+        {/* =======================================================================
+            TAB 4: LEMBAR ASESMEN ASESOR (AUDIT 8 KRITERIA)
+        ======================================================================= */}
+        {activeTab === 'assessor_sheet' && (
           <div className="space-y-6">
-            
-            {/* Asesor Workspace Banner */}
-            <div className="p-6 rounded-2xl bg-[#032B5B] text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#F5BA13] text-[#16202E] text-[10px] font-extrabold uppercase">
-                  <span>LEMBAR KERJA ASESOR AUDIT RESMI</span>
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-slate-900 border border-emerald-600/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                  <h3 className="text-base font-bold text-white">
+                    Lembar Kerja Asesmen Lapangan (AL) LAM-PTKes 2025
+                  </h3>
                 </div>
-                <h3 className="text-xl font-extrabold text-white">
-                  Lembar Penilaian & Catatan Deskriptif Asesmen Kecukupan (AK)
-                </h3>
-                <p className="text-xs text-[#D3E5FA]">
-                  Asesor menguji kesesuaian dokumen LED & LKPS, memberikan skor skala 1-4, dan menyusun catatan audit lapangan.
+                <p className="text-xs text-slate-300 mt-1">
+                  Format Penilaian Asesor Independen terhadap 8 Kriteria Laporan Evaluasi Diri (LED) S2 Magister Kesehatan Masyarakat.
                 </p>
               </div>
 
-              {/* Criterion Selector */}
-              <div className="flex items-center gap-2 bg-white/10 p-2 rounded-xl backdrop-blur-xs">
-                <span className="text-xs text-[#D3E5FA] font-bold">Pilih Kriteria:</span>
-                <select
-                  value={selectedCriterionId}
-                  onChange={(e) => setSelectedCriterionId(Number(e.target.value))}
-                  className="bg-white text-[#16202E] text-xs font-bold px-3 py-1.5 rounded-lg focus:outline-none"
-                >
-                  {criteria.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.code}: {c.shortName} ({c.weight}%)
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700 text-right">
+                  <span className="text-[11px] text-slate-400 block">Skor Akhir Asesor:</span>
+                  <span className="text-2xl font-black text-emerald-400 font-mono">{totalAssessorScore}</span>
+                  <span className={`ml-2 text-xs font-extrabold px-2 py-0.5 rounded ${assessorGrade.badgeColor}`}>
+                    {assessorGrade.title}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Assessment Cards per Indicator in Selected Criterion */}
-            {(() => {
-              const currentCrit = criteria.find((c) => c.id === selectedCriterionId) || criteria[0];
+            {/* Assessment Table per Criterion */}
+            <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700/80 shadow-md">
+              <h4 className="text-sm font-bold text-white mb-4">
+                Rekapitulasi Penilaian 8 Kriteria oleh Asesor
+              </h4>
 
-              return (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-extrabold text-base text-[#032B5B]">
-                      Daftar Sub-Indikator: {currentCrit.code} - {currentCrit.name}
-                    </h4>
-                    <span className="text-xs text-[#5B6B82] font-semibold">
-                      Bobot Total Kriteria: <strong>{currentCrit.weight}%</strong>
-                    </span>
-                  </div>
-
-                  {currentCrit.subIndicators.map((sub) => {
-                    const currentScore = sub.assessorScore ?? sub.score;
-                    const currentNotes = sub.assessorNotes ?? '';
-                    const currentStatus = sub.assessorStatus ?? 'Belum Dinilai';
-
-                    return (
-                      <div
-                        key={sub.id}
-                        className="bg-white rounded-2xl border border-[#DCE5F0] p-6 shadow-xs space-y-4"
-                      >
-                        {/* Indicator Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#EEF3F8] pb-3">
-                          <div className="flex items-center gap-2.5">
-                            <span className="px-2 py-0.5 rounded-md font-mono font-extrabold text-xs bg-[#EBF3FC] text-[#054DA0] border border-[#054DA0]/20">
-                              {sub.code}
-                            </span>
-                            <h5 className="font-extrabold text-sm text-[#032B5B]">
-                              {sub.title}
-                            </h5>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-[#5B6B82]">
-                              Nilai Tim PS: <strong>{sub.score.toFixed(2)}</strong>
-                            </span>
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                              currentStatus === 'Disetujui'
-                                ? 'bg-[#E8F7EE] text-[#0E9549]'
-                                : currentStatus === 'Perlu Perbaikan'
-                                ? 'bg-[#FEE4E2] text-[#DC2626]'
-                                : 'bg-[#FEF3C7] text-[#92400E]'
-                            }`}>
-                              {currentStatus}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Description & Target */}
-                        <p className="text-xs text-[#5B6B82] leading-relaxed">
-                          {sub.desc}
-                        </p>
-
-                        {/* Assessor Rating Form (Score 1.0 - 4.0) */}
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-[#F8FAFC] p-4 rounded-xl border border-[#DCE5F0]/80">
-                          
-                          {/* Score Input Slider (4 cols) */}
-                          <div className="md:col-span-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs font-bold text-[#032B5B]">
-                                Nilai Asesor (1.00 - 4.00):
-                              </label>
-                              <span className="text-base font-extrabold text-[#D97706] font-mono">
-                                {currentScore.toFixed(2)}
-                              </span>
-                            </div>
-
-                            <input
-                              type="range"
-                              min="1.0"
-                              max="4.0"
-                              step="0.05"
-                              value={currentScore}
-                              onChange={(e) => {
-                                handleUpdateAssessorScore(
-                                  currentCrit.id,
-                                  sub.id,
-                                  parseFloat(e.target.value),
-                                  currentNotes,
-                                  currentStatus
-                                );
-                              }}
-                              className="w-full h-2 bg-[#DCE5F0] rounded-lg appearance-none cursor-pointer accent-[#D97706]"
-                            />
-
-                            <div className="flex justify-between text-[10px] text-[#5B6B82] font-mono">
-                              <span>1.0 (Buruk)</span>
-                              <span>2.0 (Cukup)</span>
-                              <span>3.0 (Baik)</span>
-                              <span>4.0 (Unggul)</span>
-                            </div>
-                          </div>
-
-                          {/* Descriptive Notes Textarea (6 cols) */}
-                          <div className="md:col-span-6 space-y-1">
-                            <label className="text-xs font-bold text-[#032B5B]">
-                              Catatan Deskriptif & Temuan Bukti Asesor:
-                            </label>
-                            <textarea
-                              rows={2}
-                              value={currentNotes}
-                              onChange={(e) => {
-                                handleUpdateAssessorScore(
-                                  currentCrit.id,
-                                  sub.id,
-                                  currentScore,
-                                  e.target.value,
-                                  currentStatus
-                                );
-                              }}
-                              placeholder="Kelebihan, kelemahan, kelengkapan berkas fisik, dan rekomendasi asesmen lapangan..."
-                              className="w-full p-2.5 text-xs rounded-lg border border-[#DCE5F0] bg-white focus:outline-none focus:border-[#D97706]"
-                            />
-                          </div>
-
-                          {/* Verification Status (2 cols) */}
-                          <div className="md:col-span-2 space-y-2">
-                            <label className="text-xs font-bold text-[#032B5B] block">
-                              Verifikasi:
-                            </label>
-                            <select
-                              value={currentStatus}
-                              onChange={(e) => {
-                                handleUpdateAssessorScore(
-                                  currentCrit.id,
-                                  sub.id,
-                                  currentScore,
-                                  currentNotes,
-                                  e.target.value as any
-                                );
-                              }}
-                              className="w-full p-2 text-xs rounded-lg border border-[#DCE5F0] bg-white font-bold text-slate-800 focus:outline-none"
-                            >
-                              <option value="Disetujui">Disetujui</option>
-                              <option value="Perlu Perbaikan">Revisi</option>
-                              <option value="Belum Dinilai">Pending</option>
-                            </select>
-
-                            <button
-                              type="button"
-                              onClick={() => showToast(`Catatan ${sub.code} tersimpan!`)}
-                              className="w-full py-1.5 px-2 bg-[#054DA0] hover:bg-[#032B5B] text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1"
-                            >
-                              <Save className="w-3 h-3" />
-                              <span>Simpan</span>
-                            </button>
-                          </div>
-
+              <div className="space-y-4">
+                {criteriaScores.map((crit) => (
+                  <div
+                    key={crit.id}
+                    className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 transition"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-black font-mono px-2.5 py-1 rounded bg-blue-950 text-blue-300 border border-blue-800/40">
+                          {crit.code}
+                        </span>
+                        <div>
+                          <h5 className="text-xs font-bold text-white">{crit.name}</h5>
+                          <span className="text-[11px] text-slate-400">
+                            Bobot: {crit.weight}% · {crit.elementCount} Elemen Utama
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
 
+                      <div className="flex items-center gap-4 text-xs font-mono">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Skor Prodi:</span>
+                          <span className="font-bold text-blue-400">{crit.avgScore}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Skor Asesor:</span>
+                          <span className="font-bold text-emerald-400">{crit.assessorAvgScore}</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedCritNumber(crit.number);
+                            setActiveRole('assessor');
+                            setActiveTab('led_form');
+                          }}
+                          className="px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition"
+                        >
+                          Audit Elemen
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ============================================================
-            MODULE 5: CATATAN DISKUSI & AUDIT TRAIL KOLABORATIF
-            ============================================================ */}
-        {activeTab === 'discussions' && (
-          <div className="bg-white p-6 rounded-2xl border border-[#DCE5F0] shadow-xs space-y-6">
-            
-            {/* Sub-tab Switcher: Diskusi Tim vs Log Audit Trail */}
-            <div className="flex items-center justify-between border-b border-[#EEF3F8] pb-4">
+        {/* =======================================================================
+            TAB 5: EKSPOR DOKUMEN LED (WORD / PRINT FORMAT BUKU III)
+        ======================================================================= */}
+        {activeTab === 'export_led' && (
+          <div className="space-y-6">
+            {/* Export Toolbar */}
+            <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <h3 className="font-extrabold text-lg text-[#032B5B]">
-                  Kolaborasi Tim & Audit Trail Akreditasi
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-blue-400" />
+                  <span>Pratinjau Dokumen Naskah LED LAM-PTKes 2025</span>
                 </h3>
-                <p className="text-xs text-[#5B6B82]">
-                  Ruang komunikasi terkoordinasi antar tim penyusun dan rekam jejak perubahan data instrumen.
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Naskah lengkap terurut Kriteria 1 sampai Kriteria 8, dilengkapi penomoran elemen resmi dan daftar dokumen pendukung.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 bg-[#F4F7FC] p-1 rounded-xl border border-[#DCE5F0]">
+              <div className="flex items-center gap-2">
                 <button
-                  type="button"
-                  onClick={() => setActiveDiscussionSubTab('threads')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                    activeDiscussionSubTab === 'threads'
-                      ? 'bg-[#054DA0] text-white shadow-xs'
-                      : 'text-[#5B6B82] hover:text-[#032B5B]'
-                  }`}
+                  onClick={() => window.print()}
+                  className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition flex items-center gap-2 shadow-md"
                 >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Forum Diskusi ({comments.length})</span>
+                  <Printer className="w-4 h-4" />
+                  <span>Cetak / Simpan PDF</span>
                 </button>
-
                 <button
-                  type="button"
-                  onClick={() => setActiveDiscussionSubTab('audit_trail')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                    activeDiscussionSubTab === 'audit_trail'
-                      ? 'bg-[#054DA0] text-white shadow-xs'
-                      : 'text-[#5B6B82] hover:text-[#032B5B]'
-                  }`}
+                  onClick={() => {
+                    const printContents = document.getElementById('led-document-export-container')?.innerHTML;
+                    if (!printContents) return;
+                    const blob = new Blob([`
+                      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                      <head><meta charset='utf-8'><title>LED S2 MKM LAM-PTKes 2025</title>
+                      <style>
+                        body { font-family: 'Times New Roman', serif; line-height: 1.5; color: #000; padding: 2cm; }
+                        h1, h2, h3, h4 { color: #003366; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
+                        th, td { border: 1px solid #000; padding: 6px; font-size: 11pt; }
+                        th { background-color: #f2f2f2; }
+                      </style>
+                      </head>
+                      <body>${printContents}</body></html>
+                    `], { type: 'application/msword;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `LED_S2_MKM_LAMPTKes_2025.doc`;
+                    link.click();
+                    showToast('Dokumen Word (.doc) berhasil diunduh!');
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition flex items-center gap-2 shadow-md"
                 >
-                  <History className="w-3.5 h-3.5" />
-                  <span>Log Riwayat Audit ({auditLogs.length})</span>
+                  <Download className="w-4 h-4" />
+                  <span>Unduh Dokumen Word (.doc)</span>
                 </button>
               </div>
             </div>
 
-            {/* SUB-VIEW 1: FORUM DISKUSI */}
-            {activeDiscussionSubTab === 'threads' && (
-              <div className="space-y-6">
-                
-                {/* Form Kirim Catatan Baru */}
-                <form
-                  onSubmit={handleAddComment}
-                  className="p-4 rounded-xl border border-[#DCE5F0] bg-[#F8FAFC] space-y-3"
-                >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <span className="font-extrabold text-xs text-[#032B5B] flex items-center gap-1.5">
-                      <Plus className="w-4 h-4 text-[#054DA0]" />
-                      <span>Tulis Catatan / Diskusi Koordinasi Baru</span>
-                    </span>
+            {/* Print Container Preview */}
+            <div
+              id="led-document-export-container"
+              className="p-8 sm:p-12 rounded-2xl bg-white text-slate-900 shadow-2xl border border-slate-200 print:shadow-none print:border-none print:p-0 space-y-8 font-serif leading-relaxed"
+            >
+              {/* Document Header */}
+              <div className="text-center border-b-2 border-slate-900 pb-6">
+                <img
+                  src="/assets/aistudio/UMPontianak_Logo_Warna_2e912afe.png"
+                  alt="Logo"
+                  className="h-16 w-auto mx-auto mb-3"
+                />
+                <h1 className="text-lg font-black uppercase tracking-wider text-slate-900">
+                  Laporan Evaluasi Diri (LED)
+                </h1>
+                <h2 className="text-base font-bold text-slate-800">
+                  Program Studi Magister Kesehatan Masyarakat (S2 MKM)
+                </h2>
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Fakultas Ilmu Kesehatan dan Psikologi · Universitas Muhammadiyah Pontianak
+                </h3>
+                <p className="text-xs text-slate-600 mt-2 font-sans">
+                  Sesuai Pedoman Penyusunan Laporan Evaluasi Diri (Buku III) Instrumen LAM-PTKes 2025
+                </p>
+              </div>
 
-                    <div className="flex items-center gap-2">
+              {/* Document Executive Summary */}
+              <div className="space-y-2 text-xs font-sans border-b border-slate-300 pb-4">
+                <div className="flex justify-between">
+                  <span>Skor Rerata Evaluasi Diri (Prodi): <strong>{totalProdiScore} / 4.00</strong></span>
+                  <span>Predikat Akreditasi: <strong>{prodiGrade.title}</strong></span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Kriteria: <strong>8 Kriteria</strong></span>
+                  <span>Total Elemen Utama: <strong>121 Elemen</strong></span>
+                </div>
+              </div>
+
+              {/* Orderly Criteria 1 to 8 Iteration */}
+              {LAMPTKES_CRITERIA.map((crit) => {
+                const critElements = LAMPTKES_MAIN_ELEMENTS.filter((el) => el.criterionId === crit.id);
+                return (
+                  <div key={crit.id} className="space-y-6 pt-6 border-b border-slate-300 pb-8 page-break-before">
+                    <div className="border-l-4 border-blue-900 pl-4">
+                      <h3 className="text-base font-black text-blue-950 uppercase">
+                        Kriteria {crit.number}: {crit.name}
+                      </h3>
+                      <p className="text-xs text-slate-600 font-sans mt-0.5">
+                        Bobot Kriteria: {crit.weight}% · Deskripsi: {crit.description}
+                      </p>
+                    </div>
+
+                    {/* Sub-Criteria Iteration */}
+                    {crit.subCriteria.map((sub) => {
+                      const subElements = critElements.filter((el) => el.subCriterionId === sub.id);
+                      return (
+                        <div key={sub.id} className="space-y-4 pl-2">
+                          <h4 className="text-sm font-bold text-slate-900 font-sans border-b border-slate-200 pb-1">
+                            Sub-Kriteria {sub.code}: {sub.name}
+                          </h4>
+                          <p className="text-xs text-slate-700 italic font-sans">
+                            {sub.guidanceText}
+                          </p>
+
+                          {/* Elements inside Sub-Criterion */}
+                          <div className="space-y-5">
+                            {subElements.map((el) => {
+                              const ans = answers[el.code];
+                              return (
+                                <div key={el.id} className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs font-sans space-y-2">
+                                  <div className="flex items-center justify-between font-bold">
+                                    <span className="font-mono text-blue-900 font-black">
+                                      Elemen {el.code}
+                                    </span>
+                                    <span className="text-slate-600 font-mono">
+                                      Skor: {ans?.score || 3.8} / 4.00
+                                    </span>
+                                  </div>
+                                  <p className="font-bold text-slate-900">
+                                    {el.question}
+                                  </p>
+
+                                  {/* Compliance points */}
+                                  <div className="pl-4 border-l-2 border-slate-300 space-y-1 text-[11px] text-slate-700">
+                                    <span className="font-semibold block text-slate-800">Pemenuhan Elemen Utama:</span>
+                                    {el.complianceItems.map((ci) => (
+                                      <div key={ci.id} className="flex items-center gap-1.5">
+                                        <span className="text-emerald-700 font-bold">✓</span>
+                                        <span>{ci.text}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Narrative Text */}
+                                  <div className="pt-2 text-slate-800 leading-relaxed font-serif text-[12px]">
+                                    <strong className="font-sans text-[11px] block text-blue-950 mb-1">
+                                      Narasi Evaluasi Diri Program Studi:
+                                    </strong>
+                                    {ans?.narrative || 'Narasi dalam proses finalisasi tim penyusun.'}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Supporting Documents List for this Criterion */}
+                    <div className="mt-4 pt-3 border-t border-slate-200 text-xs font-sans">
+                      <strong className="block text-slate-900 mb-2">
+                        Dokumen Pendukung Kriteria {crit.number}:
+                      </strong>
+                      <ul className="list-disc pl-5 space-y-1 text-slate-700 text-[11px]">
+                        {crit.supportingDocuments.map((doc) => (
+                          <li key={doc.id}>
+                            <strong>{doc.code}</strong>: {doc.name} ({doc.category}) - <em>{doc.description}</em>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* =======================================================================
+            TAB 6: DISKUSI & AUDIT TRAIL
+        ======================================================================= */}
+        {activeTab === 'discussions' && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+              <button
+                onClick={() => setActiveDiscussionSubTab('threads')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeDiscussionSubTab === 'threads'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Catatan Diskusi Tim Penyusun ({comments.length})</span>
+              </button>
+              <button
+                onClick={() => setActiveDiscussionSubTab('audit_trail')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeDiscussionSubTab === 'audit_trail'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <History className="w-4 h-4" />
+                <span>Audit Trail & Riwayat Perubahan ({auditLogs.length})</span>
+              </button>
+            </div>
+
+            {activeDiscussionSubTab === 'threads' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Form Add Comment */}
+                <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-800/70 border border-slate-700 shadow-xl space-y-4">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Send className="w-4 h-4 text-blue-400" />
+                    <span>Kirim Catatan / Ulasan Diskusi</span>
+                  </h4>
+
+                  <form onSubmit={handleAddComment} className="space-y-4">
+                    <div>
+                      <label className="text-xs text-slate-300 block mb-1">Terkait Kriteria:</label>
                       <select
                         value={newCommentCritId}
                         onChange={(e) => setNewCommentCritId(Number(e.target.value))}
-                        className="p-1.5 text-xs rounded-lg border border-[#DCE5F0] bg-white font-semibold"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-bold"
                       >
-                        {criteria.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            Kriteria {c.id}: {c.shortName}
+                        {LAMPTKES_CRITERIA.map((c) => (
+                          <option key={c.id} value={c.number}>
+                            {c.code} - {c.shortName}
                           </option>
                         ))}
                       </select>
+                    </div>
 
+                    <div>
+                      <label className="text-xs text-slate-300 block mb-1">Tingkat Urgensi:</label>
                       <select
                         value={newCommentUrgency}
                         onChange={(e) => setNewCommentUrgency(e.target.value as any)}
-                        className="p-1.5 text-xs rounded-lg border border-[#DCE5F0] bg-white font-semibold"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
                       >
-                        <option value="Normal">Prioritas: Normal</option>
-                        <option value="Penting">Prioritas: Penting</option>
-                        <option value="Mendesak">Prioritas: Mendesak</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Penting">Penting</option>
+                        <option value="Mendesak">Mendesak</option>
                       </select>
                     </div>
-                  </div>
 
-                  <textarea
-                    rows={3}
-                    required
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder="Tuliskan catatan tindak lanjut, kekurangan data LKPS, atau instruksi revisi bukti..."
-                    className="w-full p-3 text-xs rounded-xl border border-[#DCE5F0] bg-white focus:outline-none focus:border-[#054DA0]"
-                  />
+                    <div>
+                      <label className="text-xs text-slate-300 block mb-1">Pesan Diskusi:</label>
+                      <textarea
+                        rows={4}
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        placeholder="Tuliskan catatan perbaikan berkas, notula koordinasi, atau instruksi..."
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
 
-                  <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="px-4 py-2 text-xs font-bold text-white bg-[#054DA0] hover:bg-[#032B5B] rounded-xl transition-colors flex items-center gap-1.5 shadow-xs"
+                      className="w-full py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition shadow-md flex items-center justify-center gap-2"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Kirim Catatan</span>
+                      <span>Publikasikan Catatan</span>
                     </button>
-                  </div>
-                </form>
+                  </form>
+                </div>
 
-                {/* Comment Feed */}
-                <div className="space-y-3">
+                {/* Comment List */}
+                <div className="lg:col-span-7 space-y-4">
                   {comments.map((comm) => (
                     <div
                       key={comm.id}
-                      className={`p-4 rounded-xl border transition-all ${
-                        comm.urgency === 'Mendesak'
-                          ? 'border-[#DC2626] bg-[#FEF2F2]'
-                          : comm.urgency === 'Penting'
-                          ? 'border-[#D97706] bg-[#FFFBEB]'
-                          : 'border-[#DCE5F0] bg-white'
-                      }`}
+                      className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/80 shadow-md space-y-2"
                     >
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-full ${comm.avatarBg} text-white font-extrabold flex items-center justify-center text-xs shadow-xs`}>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ${comm.avatarBg}`}>
                             {comm.authorName.charAt(0)}
                           </div>
                           <div>
-                            <span className="font-extrabold text-xs text-[#032B5B] block">
-                              {comm.authorName}
-                            </span>
-                            <span className="text-[10px] text-[#5B6B82] font-semibold">
-                              {comm.authorRole} · {comm.timestamp}
-                            </span>
+                            <span className="text-xs font-bold text-white block">{comm.authorName}</span>
+                            <span className="text-[10px] text-slate-400">{comm.authorRole}</span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF3FC] text-[#054DA0]">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-blue-950 text-blue-300 font-mono">
                             Kriteria {comm.criterionId}
                           </span>
-                          {comm.urgency !== 'Normal' && (
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              comm.urgency === 'Mendesak' ? 'bg-[#FEE4E2] text-[#DC2626]' : 'bg-[#FEF3C7] text-[#92400E]'
-                            }`}>
-                              {comm.urgency}
-                            </span>
-                          )}
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              comm.urgency === 'Mendesak'
+                                ? 'bg-rose-950 text-rose-300'
+                                : comm.urgency === 'Penting'
+                                ? 'bg-amber-950 text-amber-300'
+                                : 'bg-slate-700 text-slate-300'
+                            }`}
+                          >
+                            {comm.urgency}
+                          </span>
                         </div>
                       </div>
 
-                      <p className="text-xs text-[#16202E] leading-relaxed whitespace-pre-wrap pl-10">
+                      <p className="text-xs text-slate-200 leading-relaxed pl-9">
                         {comm.text}
                       </p>
+
+                      <div className="text-[10px] text-slate-500 text-right font-mono">
+                        {comm.timestamp}
+                      </div>
                     </div>
                   ))}
                 </div>
-
               </div>
             )}
 
-            {/* SUB-VIEW 2: AUDIT TRAIL (REKAM JEJAK AKTIVITAS) */}
             {activeDiscussionSubTab === 'audit_trail' && (
-              <div className="space-y-4">
-                <div className="overflow-x-auto border border-[#DCE5F0] rounded-xl">
+              <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700 shadow-md">
+                <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                  <History className="w-4 h-4 text-emerald-400" />
+                  <span>Log Rekam Jejak Aktivitas & Audit Perubahan Sistem</span>
+                </h4>
+
+                <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-[#F8FAFC] text-[#5B6B82] uppercase text-[10px] font-bold border-b border-[#DCE5F0]">
+                    <thead className="bg-slate-900/80 text-slate-400 border-b border-slate-700 font-semibold">
                       <tr>
-                        <th className="py-3 px-4">Waktu</th>
-                        <th className="py-3 px-4">Aksi</th>
-                        <th className="py-3 px-4">Deskripsi Perubahan</th>
-                        <th className="py-3 px-4">Pelaku / Aktor</th>
-                        <th className="py-3 px-4">Kriteria</th>
+                        <th className="p-3">Waktu</th>
+                        <th className="p-3">Aksi</th>
+                        <th className="p-3">Deskripsi Kegiatan</th>
+                        <th className="p-3">Pengguna</th>
+                        <th className="p-3">Peran</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#EEF3F8]">
+                    <tbody className="divide-y divide-slate-800">
                       {auditLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-[#FAFBFD] transition-colors">
-                          <td className="py-3 px-4 font-mono text-[11px] text-[#5B6B82] whitespace-nowrap">
-                            {log.timestamp}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              log.action === 'Update Skor'
-                                ? 'bg-[#EBF3FC] text-[#054DA0]'
-                                : log.action === 'Unggah Berkas'
-                                ? 'bg-[#E8F7EE] text-[#0E9549]'
-                                : log.action === 'Verifikasi Asesor'
-                                ? 'bg-[#FEF3C7] text-[#92400E]'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}>
+                        <tr key={log.id} className="hover:bg-slate-800/40 transition">
+                          <td className="p-3 font-mono text-slate-400 text-[11px]">{log.timestamp}</td>
+                          <td className="p-3">
+                            <span className="px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/40 font-bold text-[10px]">
                               {log.action}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-medium text-slate-800 max-w-md">
-                            {log.description}
-                          </td>
-                          <td className="py-3 px-4 text-[#5B6B82] whitespace-nowrap">
-                            <strong>{log.actor}</strong> ({log.role})
-                          </td>
-                          <td className="py-3 px-4 font-mono font-bold text-[#054DA0]">
-                            {log.criterionCode || '-'}
-                          </td>
+                          <td className="p-3 text-slate-200">{log.description}</td>
+                          <td className="p-3 font-semibold text-white">{log.actor}</td>
+                          <td className="p-3 text-slate-400 text-[11px]">{log.role}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2653,236 +2295,308 @@ export const SimAkreditasiPro: React.FC<SimAkreditasiProProps> = ({ onBackToPort
                 </div>
               </div>
             )}
-
           </div>
         )}
-
       </main>
 
-      {/* ==========================================
-          MODAL: TAMBAH TAUTAN CLOUD DRIVE
-          ========================================== */}
-      {isAddEvidenceOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[#DCE5F0] overflow-hidden p-6 space-y-4">
-            
-            <div className="flex items-center justify-between pb-3 border-b border-[#EEF3F8]">
-              <h4 className="font-extrabold text-base text-[#032B5B] flex items-center gap-2">
-                <LinkIcon className="w-5 h-5 text-[#054DA0]" />
-                <span>Tambah Tautan Bukti Digital Cloud</span>
-              </h4>
+      {/* =========================================================================
+          MODALS
+      ========================================================================= */}
+
+      {/* MODAL 1: Edit Master Google Drive URL */}
+      {isEditMasterDriveOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 text-emerald-400" />
+                <span>Ubah Tautan Master Google Drive</span>
+              </h3>
               <button
-                type="button"
-                onClick={() => setIsAddEvidenceOpen(false)}
-                className="p-1 text-[#5B6B82] hover:text-[#032B5B] rounded-lg"
+                onClick={() => setIsEditMasterDriveOpen(false)}
+                className="text-slate-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddEvidence} className="space-y-3.5 text-xs">
+            <form onSubmit={handleSaveMasterDriveUrl} className="space-y-4">
               <div>
-                <label className="block font-bold text-[#16202E] mb-1">
-                  Judul Dokumen / Nama Berkas *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newEvTitle}
-                  onChange={(e) => setNewEvTitle(e.target.value)}
-                  placeholder="Contoh: SK Rektor Penetapan Kurikulum OBE MKM 2026"
-                  className="w-full px-3 py-2 rounded-lg border border-[#DCE5F0] focus:outline-none focus:border-[#054DA0]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-[#16202E] mb-1">
-                    Kriteria Terkait *
-                  </label>
-                  <select
-                    value={newEvCritId}
-                    onChange={(e) => {
-                      const id = Number(e.target.value);
-                      setNewEvCritId(id);
-                      const defaultInd = criteria.find((c) => c.id === id)?.subIndicators[0]?.code || 'C.1.1';
-                      setNewEvIndicator(defaultInd);
-                    }}
-                    className="w-full px-3 py-2 rounded-lg border border-[#DCE5F0] bg-white focus:outline-none"
-                  >
-                    {criteria.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.code}: {c.shortName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#16202E] mb-1">
-                    Sub-Indikator *
-                  </label>
-                  <select
-                    value={newEvIndicator}
-                    onChange={(e) => setNewEvIndicator(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#DCE5F0] bg-white focus:outline-none"
-                  >
-                    {criteria.find((c) => c.id === newEvCritId)?.subIndicators.map((s) => (
-                      <option key={s.id} value={s.code}>
-                        {s.code} - {s.title.slice(0, 24)}…
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-[#16202E] mb-1">
-                    Tipe Berkas
-                  </label>
-                  <select
-                    value={newEvType}
-                    onChange={(e) => setNewEvType(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#DCE5F0] bg-white focus:outline-none"
-                  >
-                    <option value="SK">SK Rektor / Dekan</option>
-                    <option value="Pedoman/SOP">Pedoman / SOP</option>
-                    <option value="Laporan">Laporan Kinerja / AMI</option>
-                    <option value="MoA/MoU">MoA / Kerjasama</option>
-                    <option value="Sertifikat">Sertifikat / Akreditasi</option>
-                    <option value="Borang LKPS">Borang LKPS</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#16202E] mb-1">
-                    Penyedia Cloud
-                  </label>
-                  <select
-                    value={newEvProvider}
-                    onChange={(e) => setNewEvProvider(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#DCE5F0] bg-white focus:outline-none"
-                  >
-                    <option value="Google Drive">Google Drive</option>
-                    <option value="OneDrive">Microsoft OneDrive</option>
-                    <option value="Dropbox">Dropbox</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-[#16202E] mb-1">
-                  Tautan Cloud URL (Shareable Link) *
-                </label>
+                <label className="text-xs text-slate-300 block mb-1">URL Folder Google Drive:</label>
                 <input
                   type="url"
+                  value={tempMasterGdriveUrl}
+                  onChange={(e) => setTempMasterGdriveUrl(e.target.value)}
+                  placeholder="https://drive.google.com/drive/folders/..."
                   required
-                  value={newEvUrl}
-                  onChange={(e) => setNewEvUrl(e.target.value)}
-                  placeholder="https://drive.google.com/file/d/..."
-                  className="w-full px-3 py-2 rounded-lg border border-[#DCE5F0] focus:outline-none focus:border-[#054DA0] font-mono text-[11px]"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                 />
+                <span className="text-[11px] text-slate-400 mt-1 block">
+                  Tautan ini akan digunakan sebagai direktori utama bukti dokumen akreditasi S2 MKM.
+                </span>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#EEF3F8]">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddEvidenceOpen(false)}
-                  className="px-4 py-2 font-bold text-[#5B6B82] hover:bg-[#F4F7FC] rounded-lg transition-colors"
+                  onClick={() => setIsEditMasterDriveOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 font-bold text-white bg-[#054DA0] hover:bg-[#032B5B] rounded-lg shadow-xs transition-colors"
+                  className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition shadow-md"
                 >
-                  Simpan Tautan Bukti
+                  Simpan Tautan
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}
 
-      {/* ==========================================
-          MODAL: SIMULASI UPLOAD BERKAS PENDUKUNG
-          ========================================== */}
-      {isSimUploadOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[#DCE5F0] overflow-hidden p-6 space-y-4">
-            
-            <div className="flex items-center justify-between pb-3 border-b border-[#EEF3F8]">
-              <h4 className="font-extrabold text-base text-[#032B5B] flex items-center gap-2">
-                <Upload className="w-5 h-5 text-[#0E9549]" />
-                <span>Simulasi Unggah Berkas Pendukung Akreditasi</span>
-              </h4>
+      {/* MODAL 2: Add Custom Supporting Document (Tidak Terbatas pada Daftar) */}
+      {isAddCustomDocOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-amber-400" />
+                <span>Tambah Jenis Dokumen Pendukung Baru</span>
+              </h3>
               <button
-                type="button"
-                onClick={() => setIsSimUploadOpen(false)}
-                className="p-1 text-[#5B6B82] hover:text-[#032B5B] rounded-lg"
+                onClick={() => setIsAddCustomDocOpen(false)}
+                className="text-slate-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="border-2 border-dashed border-[#054DA0]/40 rounded-2xl p-8 text-center space-y-3 bg-[#EBF3FC]/40">
-              <div className="w-14 h-14 rounded-full bg-[#EBF3FC] text-[#054DA0] mx-auto flex items-center justify-center text-2xl shadow-inner">
-                <Upload className="w-7 h-7" />
+            <form onSubmit={handleAddCustomDoc} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Kriteria Sasaran:</label>
+                  <select
+                    value={newDocCritId}
+                    onChange={(e) => setNewDocCritId(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    {LAMPTKES_CRITERIA.map((c) => (
+                      <option key={c.id} value={c.number}>
+                        {c.code} - {c.shortName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Kategori Dokumen:</label>
+                  <select
+                    value={newDocCategory}
+                    onChange={(e) => setNewDocCategory(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="Kebijakan/SK">Kebijakan/SK</option>
+                    <option value="Pedoman/SOP">Pedoman/SOP</option>
+                    <option value="Laporan Kinerja">Laporan Kinerja</option>
+                    <option value="Dokumen Kurikulum">Dokumen Kurikulum</option>
+                    <option value="MoU/MoA">MoU/MoA</option>
+                    <option value="Dokumen Mutu">Dokumen Mutu</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
               </div>
+
               <div>
-                <p className="font-extrabold text-sm text-[#032B5B]">
-                  Pilih berkas dokumen PDF/Excel atau drag & drop ke area ini
-                </p>
-                <p className="text-xs text-[#5B6B82] mt-1">
-                  Format yang didukung: PDF, DOCX, XLSX. Maksimal 25 MB per dokumen.
-                </p>
+                <label className="text-xs text-slate-300 block mb-1">Nama Dokumen Pendukung:</label>
+                <input
+                  type="text"
+                  value={newDocName}
+                  onChange={(e) => setNewDocName(e.target.value)}
+                  placeholder="Contoh: Dokumen Analisis Beban Kerja dan Rencana Suksesi Tendik"
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
               </div>
 
-              <input
-                type="file"
-                id="sim-file-input"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const newEvidence: DigitalEvidence = {
-                      id: `ev-${Date.now()}`,
-                      code: `BKT-SIM-${evidences.length + 1}`,
-                      title: file.name.replace(/\.[^/.]+$/, ''),
-                      criterionId: 6,
-                      indicatorCode: 'C.6.1',
-                      fileType: 'Pedoman/SOP',
-                      cloudProvider: 'Simulasi Upload',
-                      cloudUrl: 'https://drive.google.com/drive/folders/simulasi-mkm',
-                      fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-                      uploadDate: new Date().toISOString().slice(0, 10),
-                      uploader: activeRole === 'admin' ? 'Admin Tim Akreditasi' : 'Asesor Audit',
-                      verified: true,
-                    };
-                    setEvidences((prev) => [newEvidence, ...prev]);
-                    setIsSimUploadOpen(false);
-                    showToast(`Berkas "${file.name}" berhasil diunggah ke repository!`);
-                  }
-                }}
-              />
+              <div>
+                <label className="text-xs text-slate-300 block mb-1">Kode Dokumen (Opsional):</label>
+                <input
+                  type="text"
+                  value={newDocCode}
+                  onChange={(e) => setNewDocCode(e.target.value)}
+                  placeholder="Contoh: DOC-K5-TAMBAHAN-01"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
 
-              <label
-                htmlFor="sim-file-input"
-                className="inline-block px-4 py-2 bg-[#054DA0] hover:bg-[#032B5B] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition-colors"
-              >
-                Pilih Berkas dari Komputer
-              </label>
-            </div>
+              <div>
+                <label className="text-xs text-slate-300 block mb-1">Deskripsi & Ruang Lingkup Dokumen:</label>
+                <textarea
+                  rows={3}
+                  value={newDocDesc}
+                  onChange={(e) => setNewDocDesc(e.target.value)}
+                  placeholder="Jelaskan isi dan peranan dokumen ini terhadap pemenuhan kriteria..."
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
 
-            <p className="text-[11px] text-[#5B6B82] text-center">
-              Berkas yang diunggah akan otomatis ditambahkan ke daftar bukti digital dan diindeks per kriteria.
-            </p>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="mandatory-doc"
+                  checked={newDocMandatory}
+                  onChange={(e) => setNewDocMandatory(e.target.checked)}
+                  className="rounded border-slate-700 text-blue-600 focus:ring-blue-500 bg-slate-950"
+                />
+                <label htmlFor="mandatory-doc" className="text-xs text-slate-300 cursor-pointer">
+                  Tandai sebagai dokumen pendukung wajib institusi
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCustomDocOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition shadow-md"
+                >
+                  Tambahkan Dokumen
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
+      {/* MODAL 3: Add Digital Evidence Item */}
+      {isAddEvidenceOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Upload className="w-4 h-4 text-blue-400" />
+                <span>Tautkan Berkas Bukti Sahih Baru</span>
+              </h3>
+              <button
+                onClick={() => setIsAddEvidenceOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddEvidence} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Kriteria Sasaran:</label>
+                  <select
+                    value={newEvCritId}
+                    onChange={(e) => setNewEvCritId(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    {LAMPTKES_CRITERIA.map((c) => (
+                      <option key={c.id} value={c.number}>
+                        {c.code} - {c.shortName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Kode Elemen Tertaut:</label>
+                  <input
+                    type="text"
+                    value={newEvElementCode}
+                    onChange={(e) => setNewEvElementCode(e.target.value)}
+                    placeholder="misal: 1.1.2 atau 5.5.1"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-300 block mb-1">Judul / Nama Berkas Bukti:</label>
+                <input
+                  type="text"
+                  value={newEvTitle}
+                  onChange={(e) => setNewEvTitle(e.target.value)}
+                  placeholder="Contoh: Berita Acara Lokakarya Kurikulum Bersama Pakar Kesmas"
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Tipe Dokumen:</label>
+                  <select
+                    value={newEvType}
+                    onChange={(e) => setNewEvType(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="SK/Kebijakan">SK/Kebijakan</option>
+                    <option value="Pedoman/SOP">Pedoman/SOP</option>
+                    <option value="Laporan Kinerja">Laporan Kinerja</option>
+                    <option value="Dokumen Kurikulum">Dokumen Kurikulum</option>
+                    <option value="MoU/MoA">MoU/MoA</option>
+                    <option value="Dokumen Mutu">Dokumen Mutu</option>
+                    <option value="Sertifikat">Sertifikat</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Penyedia Cloud:</label>
+                  <select
+                    value={newEvProvider}
+                    onChange={(e) => setNewEvProvider(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="Google Drive">Google Drive</option>
+                    <option value="OneDrive">OneDrive</option>
+                    <option value="Dropbox">Dropbox</option>
+                    <option value="Simulasi Upload">Simulasi Upload</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-300 block mb-1">URL Cloud Berkas (Google Drive):</label>
+                <input
+                  type="url"
+                  value={newEvUrl}
+                  onChange={(e) => setNewEvUrl(e.target.value)}
+                  placeholder="https://drive.google.com/..."
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddEvidenceOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition shadow-md"
+                >
+                  Tautkan Berkas
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

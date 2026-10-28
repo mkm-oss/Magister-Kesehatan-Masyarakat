@@ -33,6 +33,7 @@ import {
   EyeOff,
   X,
   ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   Peminatan,
@@ -2029,10 +2030,11 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="hidden sm:flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
-                  <span className="text-slate-500">PIN Admin Saat Ini:</span>
-                  <span className="font-mono font-bold text-rose-700">
-                    {portalUsers.find((u) => u.role === 'admin')?.pin || '1234'}
+                <div className="hidden sm:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-800 font-semibold">Status Kredensial Admin:</span>
+                  <span className="font-mono font-bold text-slate-700 tracking-wider">
+                    ••••••••
                   </span>
                 </div>
               </div>
@@ -2174,18 +2176,14 @@ export const AdminDashboard: React.FC = () => {
                             </td>
 
                             <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded border border-slate-200">
-                                  {isVisible ? u.pin : '••••'}
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 tracking-wider">
+                                  ••••••••
                                 </span>
-                                <button
-                                  type="button"
-                                  onClick={() => togglePinVisibility(u.id)}
-                                  className="text-slate-400 hover:text-slate-700 p-1 rounded"
-                                  title={isVisible ? 'Sembunyikan Password' : 'Lihat Password'}
-                                >
-                                  {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                </button>
+                                <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-0.5">
+                                  <Lock className="w-3 h-3 text-emerald-600" />
+                                  <span>Tersimpan</span>
+                                </span>
                               </div>
                             </td>
 
@@ -2209,9 +2207,9 @@ export const AdminDashboard: React.FC = () => {
                                   type="button"
                                   onClick={() => handleResetPin(u)}
                                   className="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 font-semibold text-[11px] transition-colors cursor-pointer"
-                                  title="Reset PIN ke 1234"
+                                  title="Reset Password Pengguna ke Default"
                                 >
-                                  Reset 1234
+                                  Reset PIN
                                 </button>
 
                                 {u.id !== 'user-admin' && (
@@ -2339,15 +2337,15 @@ export const AdminDashboard: React.FC = () => {
                       Kata Sandi / PIN Masuk Portal *
                     </label>
                     <input
-                      type="text"
+                      type="password"
                       required
-                      placeholder="Contoh: 1234 atau password rahasia"
+                      placeholder="Minimal 4 karakter"
                       value={userFormPin}
                       onChange={(e) => setUserFormPin(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono font-bold text-rose-800"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono font-bold text-slate-800"
                     />
                     <span className="text-[10px] text-slate-400 block">
-                      Digunakan oleh user untuk login ke portal
+                      Tersimpan aman untuk autentikasi masuk portal
                     </span>
                   </div>
                 </div>

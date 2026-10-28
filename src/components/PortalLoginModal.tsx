@@ -74,22 +74,6 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
     onClose();
   };
 
-  const handleQuickDemoLogin = (role: 'admin' | 'dosen' | 'mahasiswa') => {
-    const userForRole = portalUsers.find((u) => u.role === role);
-    if (userForRole) {
-      setUsername(userForRole.email);
-      setPassword(userForRole.pin);
-      setCustomName(userForRole.name);
-      const validation = validatePortalLogin(userForRole.email, userForRole.pin, role);
-      if (validation.success && validation.user) {
-        login(validation.user.role, validation.user.email, validation.user.name);
-        onClose();
-      } else {
-        setErrorMsg('Validasi login otomatis gagal. Silakan masukkan password.');
-      }
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
       <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-6">
@@ -193,31 +177,14 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
             </div>
           )}
 
-          {/* Quick 1-Click Login Button */}
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin(selectedRole)}
-              className="w-full py-2.5 px-4 text-xs font-semibold text-blue-950 bg-amber-300 hover:bg-amber-400 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>
-                Masuk Cepat Sebagai {selectedRole === 'admin' ? 'Admin' : selectedRole === 'dosen' ? 'Dosen' : 'Mahasiswa'} (1-Klik)
-              </span>
-            </button>
-            <span className="text-[10px] text-slate-400 block text-center">
-              Akses instan tanpa perlu ketik username/password
-            </span>
-          </div>
-
-          {/* Quick Preset Accounts from Dynamic Portal Users */}
+          {/* Akun Pengguna Terdaftar (Hanya Email / Username, Password Tetap Rahasia) */}
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Akun Terdaftar ({portalUsers.length} Pengguna):
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                Pilih Akun ({portalUsers.length} Pengguna Terdaftar):
               </span>
               <span className="text-[10px] text-slate-400">
-                Klik untuk isi otomatis
+                Klik untuk isi Email/ID
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -228,24 +195,23 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
                   onClick={() => {
                     setSelectedRole(u.role);
                     setUsername(u.email);
-                    setPassword(u.pin);
+                    setPassword(''); // Wajib diisi manual oleh pengguna!
                     setCustomName(u.name);
                     setErrorMsg('');
                   }}
                   className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                    u.role === 'admin'
-                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300/40'
+                    selectedRole === u.role && username === u.email
+                      ? 'bg-blue-900 text-white shadow-xs'
+                      : u.role === 'admin'
+                      ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300/40'
                       : u.role === 'dosen'
-                      ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300/40'
-                      : 'bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-300/40'
+                      ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300/40'
+                      : 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-300/40'
                   }`}
-                  title={`${u.name} (PIN: ${u.pin})`}
+                  title={u.name}
                 >
                   <span>{u.role === 'admin' ? '⚙️' : u.role === 'dosen' ? '👨‍🏫' : '🎓'}</span>
                   <span className="font-semibold">{u.email}</span>
-                  <span className="opacity-60 text-[10px] bg-white/70 px-1 py-0.2 rounded font-mono">
-                    PIN: {u.pin}
-                  </span>
                 </button>
               ))}
             </div>
@@ -253,7 +219,9 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
 
           <div className="relative flex py-1 items-center">
             <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-3 text-slate-400 text-xs uppercase">atau masuk dengan akun</span>
+            <span className="flex-shrink mx-3 text-slate-400 text-xs font-semibold uppercase">
+              Masukkan Kredensial Masuk
+            </span>
             <div className="flex-grow border-t border-slate-200"></div>
           </div>
 
