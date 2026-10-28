@@ -683,7 +683,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         (cleanId === 'superadmin' && u.role === 'superadmin') ||
         (cleanId === 'admin' && (u.role === 'admin' || u.role === 'superadmin')) ||
         (cleanId === 'admin.mkm' && (u.role === 'admin' || u.role === 'superadmin')) ||
-        (cleanId === 'mkm@unmuhpnk.ac.id' && u.role === 'superadmin')
+        (cleanId === 'mkm@unmuhpnk.ac.id' && u.role === 'superadmin') ||
+        (cleanId === 'dosen' && u.role === 'dosen') ||
+        (cleanId === 'mahasiswa' && u.role === 'mahasiswa') ||
+        (cleanId === 'mhs' && u.role === 'mahasiswa')
     );
 
     // If not found directly and role is specified, try finding first matching user of that role if cleanId is generic

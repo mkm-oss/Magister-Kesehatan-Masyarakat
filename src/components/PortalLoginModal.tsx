@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ShieldCheck, UserCheck, GraduationCap, ArrowRight, KeyRound, LogIn } from 'lucide-react';
+import { X, Lock, User, ArrowRight, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface PortalLoginModalProps {
@@ -11,296 +11,167 @@ interface PortalLoginModalProps {
 export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({
   isOpen,
   onClose,
-  defaultRole = 'superadmin',
+  defaultRole,
 }) => {
-  const { login, portalUsers, validatePortalLogin } = useApp();
-  const [selectedRole, setSelectedRole] = useState<'superadmin' | 'admin' | 'dosen' | 'mahasiswa'>(defaultRole);
+  const { login, validatePortalLogin } = useApp();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [customName, setCustomName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedRole(defaultRole);
+      setUsername('');
+      setPassword('');
       setErrorMsg('');
-      const defaultUser = portalUsers.find((u) => u.role === defaultRole);
-      if (defaultUser) {
-        setUsername(defaultUser.email);
-        setPassword('');
-        setCustomName(defaultUser.name);
-      } else {
-        setUsername('');
-        setPassword('');
-      }
+      setIsLoading(false);
     }
-  }, [isOpen, defaultRole, portalUsers]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleRoleChange = (role: 'superadmin' | 'admin' | 'dosen' | 'mahasiswa') => {
-    setSelectedRole(role);
-    setErrorMsg('');
-    const user = portalUsers.find((u) => u.role === role);
-    if (user) {
-      setUsername(user.email);
-      setPassword('');
-      setCustomName(user.name);
-    } else {
-      setUsername('');
-      setPassword('');
-    }
-  };
-
-  const handleCustomLogin = (e: React.FormEvent) => {
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+
     if (!username.trim()) {
-      setErrorMsg('Mohon masukkan Email / NIDN / NIM.');
+      setErrorMsg('Silakan masukkan Email, NIDN, atau NIM.');
       return;
     }
     if (!password.trim()) {
-      setErrorMsg('Mohon masukkan PIN / Password untuk masuk ke portal.');
+      setErrorMsg('Silakan masukkan Password / Kata Sandi.');
       return;
     }
 
-    const validation = validatePortalLogin(username, password, selectedRole);
+    setIsLoading(true);
+
+    const validation = validatePortalLogin(username, password, defaultRole);
     if (!validation.success) {
-      setErrorMsg(validation.message || 'Password atau identitas tidak sesuai.');
+      setErrorMsg(validation.message || 'Identitas atau password tidak sesuai.');
+      setIsLoading(false);
       return;
     }
 
     const matched = validation.user!;
-    login(matched.role, matched.email || matched.id, customName.trim() || matched.name);
+    login(matched.role, matched.email || matched.id, matched.name);
+    setIsLoading(false);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto animate-fade-in font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-6">
         
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
-          <div className="flex items-center gap-3">
+        {/* Tombol Tutup (X) */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors z-20 cursor-pointer"
+          aria-label="Tutup"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* KOP RESMI INSTITUSI */}
+        <div className="pt-6 px-6 pb-3 bg-white">
+          <div className="flex items-center gap-3.5 pr-8">
             <img
               src="/assets/aistudio/UMPontianak_Logo_Warna_2e912afe.png"
-              alt="Logo UM Pontianak"
-              className="h-9 w-auto bg-white/10 p-1 rounded"
+              alt="Logo Universitas Muhammadiyah Pontianak"
+              className="h-16 w-auto object-contain shrink-0"
             />
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-white">
-                Portal Sivitas Akademika MKM
-              </h3>
-              <p className="text-[11px] text-slate-300">
-                FIKPsi Universitas Muhammadiyah Pontianak
-              </p>
+            <div className="flex flex-col text-left">
+              <span className="text-[13px] sm:text-[14px] font-black text-[#032B5B] tracking-tight leading-tight uppercase">
+                UNIVERSITAS MUHAMMADIYAH PONTIANAK
+              </span>
+              <span className="text-[11px] sm:text-[12px] font-extrabold text-slate-800 tracking-normal leading-tight uppercase mt-0.5">
+                FAKULTAS ILMU KESEHATAN DAN PSIKOLOGI
+              </span>
+              <span className="text-[10px] sm:text-[11px] font-bold text-amber-600 leading-tight uppercase mt-0.5">
+                PROGRAM STUDI MAGISTER KESEHATAN MASYARAKAT
+              </span>
+              <span className="text-[9px] text-slate-500 font-medium leading-none mt-1">
+                Jl. Jenderal Ahmad Yani No. 111, Pontianak 78124
+              </span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-300 hover:text-white rounded-lg transition-colors"
-            aria-label="Tutup"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Garis Batas Kop Standar Institusi (Ganda: Tebal + Tipis) */}
+          <div className="mt-3.5">
+            <div className="h-[2.5px] bg-slate-900 w-full" />
+            <div className="h-[1px] bg-slate-400 w-full mt-[2px]" />
+          </div>
         </div>
 
-        {/* Role Selector Tabs (4 Roles including Superadmin) */}
-        <div className="grid grid-cols-4 p-2 bg-slate-100 border-b border-slate-200 gap-1 text-[11px] font-semibold">
-          <button
-            type="button"
-            onClick={() => handleRoleChange('superadmin')}
-            className={`py-2 px-1 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 transition-all text-center ${
-              selectedRole === 'superadmin'
-                ? 'bg-amber-600 text-white shadow-sm font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
-            <span>Superadmin</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleRoleChange('admin')}
-            className={`py-2 px-1 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 transition-all text-center ${
-              selectedRole === 'admin'
-                ? 'bg-blue-900 text-white shadow-sm font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Admin</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleRoleChange('dosen')}
-            className={`py-2 px-1 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 transition-all text-center ${
-              selectedRole === 'dosen'
-                ? 'bg-blue-900 text-white shadow-sm font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>Dosen</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleRoleChange('mahasiswa')}
-            className={`py-2 px-1 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 transition-all text-center ${
-              selectedRole === 'mahasiswa'
-                ? 'bg-blue-900 text-white shadow-sm font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>Mahasiswa</span>
-          </button>
-        </div>
-
-        {/* Form Body */}
-        <div className="p-6 space-y-5">
-          
-          {/* Role Description Banner */}
-          <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-950 flex items-start gap-2.5">
-            <KeyRound className="w-4 h-4 text-blue-800 shrink-0 mt-0.5" />
-            <div>
-              {selectedRole === 'superadmin' && (
-                <span>
-                  <strong className="text-amber-800">Akses Super Administrator:</strong> Hak akses tak terbatas untuk mengedit seluruh bagian aplikasi, membuat pengguna baru, menyusun menu & sub-menu, serta membuat halaman publik baru.
-                </span>
-              )}
-              {selectedRole === 'admin' && (
-                <span>
-                  <strong>Portal Administrator:</strong> Kelola konten website, ubah peminatan, kurikulum, data dosen, biaya, serta pantau pendaftar PMB.
-                </span>
-              )}
-              {selectedRole === 'dosen' && (
-                <span>
-                  <strong>Portal Dosen:</strong> Akses cepat ke Kelas Online (LMS), Sistem Bimbingan Tesis, SIAKAD nilai, dan presensi perkuliahan pascasarjana.
-                </span>
-              )}
-              {selectedRole === 'mahasiswa' && (
-                <span>
-                  <strong>Portal Mahasiswa:</strong> Tautan langsung perkuliahan daring (LMS), monitoring pengajuan & logbook tesis, jadwal kuliah, dan SIAKAD.
-                </span>
-              )}
-            </div>
+        {/* KOLOM LOGIN SAJA */}
+        <div className="p-6 pt-4 space-y-4">
+          <div className="text-center pb-1">
+            <h3 className="text-base font-extrabold text-[#032B5B]">
+              LOGIN PORTAL AKADEMIK
+            </h3>
           </div>
 
           {errorMsg && (
-            <div className="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs border border-rose-200">
-              {errorMsg}
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold flex items-start gap-2 animate-shake">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+              <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Akun Pengguna Terdaftar (Hanya Email / Username, Password Tetap Rahasia) */}
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                Pilih Akun ({portalUsers.length} Pengguna Terdaftar):
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Klik untuk isi Email/ID
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {portalUsers.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedRole(u.role);
-                    setUsername(u.email);
-                    setPassword(''); // Wajib diisi manual oleh pengguna!
-                    setCustomName(u.name);
-                    setErrorMsg('');
-                  }}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                    selectedRole === u.role && username === u.email
-                      ? 'bg-blue-900 text-white shadow-xs'
-                      : u.role === 'admin'
-                      ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300/40'
-                      : u.role === 'dosen'
-                      ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300/40'
-                      : 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-300/40'
-                  }`}
-                  title={u.name}
-                >
-                  <span>{u.role === 'admin' ? '⚙️' : u.role === 'dosen' ? '👨‍🏫' : '🎓'}</span>
-                  <span className="font-semibold">{u.email}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-3 text-slate-400 text-xs font-semibold uppercase">
-              Masukkan Kredensial Masuk
-            </span>
-            <div className="flex-grow border-t border-slate-200"></div>
-          </div>
-
-          {/* Custom Form */}
-          <form onSubmit={handleCustomLogin} className="space-y-3.5">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-700">
-                {selectedRole === 'admin'
-                  ? 'Email / Username Admin'
-                  : selectedRole === 'dosen'
-                  ? 'Email / NIDN Dosen'
-                  : 'Email / NIM Mahasiswa'}
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            {/* Kolom 1: Email / Username / NIDN / NIM */}
+            <div className="space-y-1.5 text-left">
+              <label className="block text-xs font-bold text-slate-700">
+                Email / ID Pengguna
               </label>
-              <input
-                type="text"
-                placeholder={
-                  selectedRole === 'admin'
-                    ? 'admin@contoh.ac.id'
-                    : selectedRole === 'dosen'
-                    ? 'dosen@contoh.ac.id'
-                    : 'mahasiswa@contoh.ac.id'
-                }
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900"
-              />
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <User className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="Email, NIDN, atau NIM"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#054DA0]/20 focus:border-[#054DA0] transition-colors"
+                />
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-700">Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-700">
-                Nama Tampilan (Opsional)
+            {/* Kolom 2: Password / Kata Sandi */}
+            <div className="space-y-1.5 text-left">
+              <label className="block text-xs font-bold text-slate-700">
+                Password
               </label>
-              <input
-                type="text"
-                placeholder="Contoh: dr. Budi Santoso"
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900"
-              />
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <Lock className="w-4 h-4" />
+                </span>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#054DA0]/20 focus:border-[#054DA0] transition-colors font-mono"
+                />
+              </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow transition-colors flex items-center justify-center gap-2 pt-2"
-            >
-              <span>Masuk ke Portal</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            {/* Tombol Submit Masuk */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-[#032B5B] hover:bg-[#054DA0] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-70"
+              >
+                <span>{isLoading ? 'Memverifikasi...' : 'Masuk ke Portal'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </form>
-
         </div>
 
       </div>
